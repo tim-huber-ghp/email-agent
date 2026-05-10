@@ -67,6 +67,7 @@ def normalize_emails(state: AgentState) -> AgentState:
     return {
         **state,
         "emails": normalized,
+        "has_emails": bool(normalized),
     }
 
 
@@ -78,32 +79,44 @@ def filter_emails(state: AgentState) -> AgentState:
     return {
         **state,
         "filtered_emails": filtered,
+        "has_filtered_emails": bool(filtered),
     }
 
 
-def classify_emails(state: AgentState, settings: Settings) -> AgentState:
-    """Assign an importance label to each candidate email."""
+def classify_emails_with_llm_node(state: AgentState, settings: Settings) -> AgentState:
+    """Try LLM-based email classification."""
 
     filtered_emails = state.get("filtered_emails", [])
-    classification_mode = "heuristic"
-    classification_error = ""
+    try:
+        assessments = classify_emails_with_llm(filtered_emails, settings)
+        return {
+            **state,
+            "assessments": assessments,
+            "classification_mode": "llm",
+            "classification_error": "",
+        }
+    except Exception as exc:
+        return {
+            **state,
+            "assessments": [],
+            "classification_mode": "llm_failed",
+            "classification_error": str(exc),
+        }
 
-    if llm_is_available(settings):
-        try:
-            assessments = classify_emails_with_llm(filtered_emails, settings)
-            classification_mode = "llm"
-        except Exception as exc:
-            assessments = [assess_email(email) for email in filtered_emails]
-            classification_mode = "heuristic_fallback"
-            classification_error = str(exc)
-    else:
-        assessments = [assess_email(email) for email in filtered_emails]
+
+def classify_emails_with_heuristics_node(state: AgentState) -> AgentState:
+    """Use heuristic classification as the primary or fallback path."""
+
+    filtered_emails = state.get("filtered_emails", [])
+    assessments = [assess_email(email) for email in filtered_emails]
+    previous_error = state.get("classification_error", "")
+    previous_mode = state.get("classification_mode", "")
 
     return {
         **state,
         "assessments": assessments,
-        "classification_mode": classification_mode,
-        "classification_error": classification_error,
+        "classification_mode": "heuristic_fallback" if previous_mode == "llm_failed" else "heuristic",
+        "classification_error": previous_error,
     }
 
 
@@ -133,17 +146,58 @@ def extract_action_items(state: AgentState, settings: Settings) -> AgentState:
     }
 
 
-def generate_summary(state: AgentState, settings: Settings) -> AgentState:
-    """Build a readable daily summary from heuristic results."""
+def generate_summary_with_llm_node(state: AgentState, settings: Settings) -> AgentState:
+    """Try LLM-based summary generation for important emails."""
+
+    assessments = state.get("assessments", [])
+    important_assessments = [item for item in assessments if item.importance_score >= 50]
+    filtered_emails = state.get("filtered_emails", [])
+    important_email_ids = [item.email_id for item in important_assessments]
+    important_emails = [email for email in filtered_emails if email.id in important_email_ids]
+    if not important_emails:
+        return {
+            **state,
+            "summary_mode": "heuristic",
+            "summary_error": "",
+        }
+
+    try:
+        llm_summary = generate_summary_with_llm(
+            important_emails=important_emails,
+            assessments=important_assessments,
+            action_items=state.get("action_items", []),
+            settings=settings,
+        )
+        counts = Counter(item.label for item in important_assessments)
+        summary = DailySummary(
+            headline=llm_summary.headline,
+            overview=llm_summary.overview,
+            important_email_ids=important_email_ids,
+            action_items=state.get("action_items", []),
+            counts_by_label=dict(counts),
+            language=settings.language,
+        )
+        return {
+            **state,
+            "summary": summary,
+            "summary_mode": "llm",
+            "summary_error": "",
+        }
+    except Exception as exc:
+        return {
+            **state,
+            "summary_mode": "llm_failed",
+            "summary_error": str(exc),
+        }
+
+
+def generate_summary_with_heuristics_node(state: AgentState, settings: Settings) -> AgentState:
+    """Build a readable summary without relying on a model call."""
 
     assessments = state.get("assessments", [])
     important_assessments = [item for item in assessments if item.importance_score >= 50]
     counts = Counter(item.label for item in important_assessments)
-    filtered_emails = state.get("filtered_emails", [])
     important_email_ids = [item.email_id for item in important_assessments]
-    important_emails = [email for email in filtered_emails if email.id in important_email_ids]
-    summary_mode = "heuristic"
-    summary_error = ""
 
     if important_assessments:
         top_labels = ", ".join(
@@ -170,21 +224,8 @@ def generate_summary(state: AgentState, settings: Settings) -> AgentState:
             overview = "Your inbox was quiet today. No important emails were detected."
             headline = "No urgent email follow-up today."
 
-    if important_emails and llm_is_available(settings):
-        try:
-            llm_summary = generate_summary_with_llm(
-                important_emails=important_emails,
-                assessments=important_assessments,
-                action_items=state.get("action_items", []),
-                settings=settings,
-            )
-            headline = llm_summary.headline
-            overview = llm_summary.overview
-            summary_mode = "llm"
-        except Exception as exc:
-            summary_mode = "heuristic_fallback"
-            summary_error = str(exc)
-
+    previous_error = state.get("summary_error", "")
+    previous_mode = state.get("summary_mode", "")
     summary = DailySummary(
         headline=headline,
         overview=overview,
@@ -197,8 +238,38 @@ def generate_summary(state: AgentState, settings: Settings) -> AgentState:
     return {
         **state,
         "summary": summary,
-        "summary_mode": summary_mode,
-        "summary_error": summary_error,
+        "summary_mode": "heuristic_fallback" if previous_mode == "llm_failed" else "heuristic",
+        "summary_error": previous_error,
+    }
+
+
+def generate_quiet_summary(state: AgentState, settings: Settings) -> AgentState:
+    """Create a short summary when there are no emails or no useful emails."""
+
+    if settings.language == "de":
+        overview = "Dein Posteingang war heute ruhig. Es wurden keine wichtigen E-Mails erkannt."
+        headline = "Heute gibt es keine dringenden E-Mail-Aufgaben."
+    else:
+        overview = "Your inbox was quiet today. No important emails were detected."
+        headline = "No urgent email follow-up today."
+
+    summary = DailySummary(
+        headline=headline,
+        overview=overview,
+        important_email_ids=[],
+        action_items=[],
+        counts_by_label={},
+        language=settings.language,
+    )
+
+    return {
+        **state,
+        "assessments": [],
+        "action_items": [],
+        "summary": summary,
+        "classification_mode": state.get("classification_mode", "heuristic"),
+        "summary_mode": "heuristic",
+        "summary_error": "",
     }
 
 
@@ -225,18 +296,69 @@ def build_workflow(settings: Settings):
     graph.add_node("load_emails", lambda state: load_emails(state, settings))
     graph.add_node("normalize_emails", normalize_emails)
     graph.add_node("filter_emails", filter_emails)
-    graph.add_node("classify_emails", lambda state: classify_emails(state, settings))
+    graph.add_node(
+        "classify_emails_with_llm",
+        lambda state: classify_emails_with_llm_node(state, settings),
+    )
+    graph.add_node("classify_emails_with_heuristics", classify_emails_with_heuristics_node)
     graph.add_node("extract_action_items", lambda state: extract_action_items(state, settings))
-    graph.add_node("generate_summary", lambda state: generate_summary(state, settings))
+    graph.add_node(
+        "generate_summary_with_llm",
+        lambda state: generate_summary_with_llm_node(state, settings),
+    )
+    graph.add_node(
+        "generate_summary_with_heuristics",
+        lambda state: generate_summary_with_heuristics_node(state, settings),
+    )
+    graph.add_node("generate_quiet_summary", lambda state: generate_quiet_summary(state, settings))
     graph.add_node("save_run", lambda state: save_run(state, settings))
 
     graph.add_edge(START, "load_emails")
     graph.add_edge("load_emails", "normalize_emails")
-    graph.add_edge("normalize_emails", "filter_emails")
-    graph.add_edge("filter_emails", "classify_emails")
-    graph.add_edge("classify_emails", "extract_action_items")
-    graph.add_edge("extract_action_items", "generate_summary")
-    graph.add_edge("generate_summary", "save_run")
+    graph.add_conditional_edges(
+        "normalize_emails",
+        route_after_normalization,
+        {
+            "filter_emails": "filter_emails",
+            "quiet_summary": "generate_quiet_summary",
+        },
+    )
+    graph.add_conditional_edges(
+        "filter_emails",
+        route_after_filtering,
+        {
+            "classify_with_llm": "classify_emails_with_llm",
+            "classify_with_heuristics": "classify_emails_with_heuristics",
+            "quiet_summary": "generate_quiet_summary",
+        },
+    )
+    graph.add_conditional_edges(
+        "classify_emails_with_llm",
+        route_after_llm_classification,
+        {
+            "extract_action_items": "extract_action_items",
+            "classify_with_heuristics": "classify_emails_with_heuristics",
+        },
+    )
+    graph.add_edge("classify_emails_with_heuristics", "extract_action_items")
+    graph.add_conditional_edges(
+        "extract_action_items",
+        route_after_action_items,
+        {
+            "summary_with_llm": "generate_summary_with_llm",
+            "summary_with_heuristics": "generate_summary_with_heuristics",
+        },
+    )
+    graph.add_conditional_edges(
+        "generate_summary_with_llm",
+        route_after_llm_summary,
+        {
+            "save_run": "save_run",
+            "summary_with_heuristics": "generate_summary_with_heuristics",
+        },
+    )
+    graph.add_edge("generate_summary_with_heuristics", "save_run")
+    graph.add_edge("generate_quiet_summary", "save_run")
     graph.add_edge("save_run", END)
 
     return graph.compile()
@@ -246,7 +368,35 @@ def run_workflow(initial_state: AgentState, settings: Settings) -> AgentState:
     """Run the compiled LangGraph workflow."""
 
     app = build_workflow(settings)
-    return app.invoke({**initial_state, "language": settings.language})
+    return app.invoke(
+        {
+            **initial_state,
+            "language": settings.language,
+            "llm_enabled_for_run": llm_is_available(settings),
+        }
+    )
+
+
+def route_after_normalization(state: AgentState) -> str:
+    return "filter_emails" if state.get("has_emails") else "quiet_summary"
+
+
+def route_after_filtering(state: AgentState) -> str:
+    if not state.get("has_filtered_emails"):
+        return "quiet_summary"
+    return "classify_with_llm" if state.get("llm_enabled_for_run") else "classify_with_heuristics"
+
+
+def route_after_llm_classification(state: AgentState) -> str:
+    return "extract_action_items" if state.get("classification_mode") == "llm" else "classify_with_heuristics"
+
+
+def route_after_action_items(state: AgentState) -> str:
+    return "summary_with_llm" if state.get("llm_enabled_for_run") else "summary_with_heuristics"
+
+
+def route_after_llm_summary(state: AgentState) -> str:
+    return "save_run" if state.get("summary_mode") == "llm" else "summary_with_heuristics"
 
 
 def _build_action_description(

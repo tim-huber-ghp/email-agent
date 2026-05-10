@@ -23,3 +23,6 @@ class AgentState(TypedDict, total=False):
     summary_mode: str
     summary_error: str
     language: str
+    has_emails: bool
+    has_filtered_emails: bool
+    llm_enabled_for_run: bool
