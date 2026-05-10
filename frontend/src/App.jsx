@@ -125,7 +125,7 @@ function App() {
       <header className="hero-card">
         <div className="eyebrow-row">
           <span className="eyebrow">Email Agent</span>
-          <span className="live-pill">Live run artifact viewer</span>
+          <span className="live-pill">Run dashboard</span>
         </div>
 
         <div className="hero-grid">
@@ -173,7 +173,7 @@ function App() {
 
       <section className="stats-row">
         {dashboardData.stats.map((stat) => (
-          <article className={`stat-card tone-${stat.tone}`} key={stat.label}>
+          <article className="stat-card" key={stat.label}>
             <span>{stat.label}</span>
             <strong>{stat.value}</strong>
           </article>
@@ -244,7 +244,7 @@ function App() {
           <div className="panel-heading">
             <div>
               <span className="section-kicker">Why this matters</span>
-              <h2>CV story</h2>
+              <h2>Project value</h2>
             </div>
           </div>
 

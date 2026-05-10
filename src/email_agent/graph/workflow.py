@@ -209,20 +209,20 @@ def generate_summary_with_heuristics_node(state: AgentState, settings: Settings)
                 f"Du hast heute {len(important_assessments)} wichtige E-Mails erhalten. "
                 f"Wichtigste Kategorien: {top_labels}."
             )
-            headline = "Wichtige E-Mails brauchen heute deine Aufmerksamkeit."
+            headline = "Dein Tag in E-Mails."
         else:
             overview = (
                 f"You received {len(important_assessments)} important emails today. "
                 f"Main categories: {top_labels}."
             )
-            headline = "Important emails need your attention today."
+            headline = "Your day in emails."
     else:
         if settings.language == "de":
             overview = "Dein Posteingang war heute ruhig. Es wurden keine wichtigen E-Mails erkannt."
-            headline = "Heute gibt es keine dringenden E-Mail-Aufgaben."
+            headline = "Heute war dein Posteingang ruhig."
         else:
             overview = "Your inbox was quiet today. No important emails were detected."
-            headline = "No urgent email follow-up today."
+            headline = "Your inbox was quiet today."
 
     previous_error = state.get("summary_error", "")
     previous_mode = state.get("summary_mode", "")
@@ -248,10 +248,10 @@ def generate_quiet_summary(state: AgentState, settings: Settings) -> AgentState:
 
     if settings.language == "de":
         overview = "Dein Posteingang war heute ruhig. Es wurden keine wichtigen E-Mails erkannt."
-        headline = "Heute gibt es keine dringenden E-Mail-Aufgaben."
+        headline = "Heute war dein Posteingang ruhig."
     else:
         overview = "Your inbox was quiet today. No important emails were detected."
-        headline = "No urgent email follow-up today."
+        headline = "Your inbox was quiet today."
 
     summary = DailySummary(
         headline=headline,
