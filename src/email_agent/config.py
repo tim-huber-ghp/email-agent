@@ -14,6 +14,7 @@ class Settings(BaseSettings):
     model_name: str = Field(default="gpt-4.1-mini", alias="EMAIL_AGENT_MODEL")
     use_llm: bool = Field(default=False, alias="EMAIL_AGENT_USE_LLM")
     llm_provider: str = Field(default="openai", alias="EMAIL_AGENT_LLM_PROVIDER")
+    language: str = Field(default="en", alias="EMAIL_AGENT_LANGUAGE")
     openai_api_key: str | None = Field(default=None, alias="OPENAI_API_KEY")
     google_api_key: str | None = Field(default=None, alias="GOOGLE_API_KEY")
     gmail_client_id: str | None = Field(default=None, alias="GMAIL_CLIENT_ID")

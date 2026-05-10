@@ -88,7 +88,7 @@ def generate_summary_with_llm(
     client = OpenAI(api_key=settings.openai_api_key)
     response = client.responses.parse(
         model=settings.model_name,
-        input=summary_messages(important_emails, assessments, action_items),
+        input=summary_messages(important_emails, assessments, action_items, settings.language),
         text_format=SummaryNarrative,
     )
     parsed = response.output_parsed
@@ -132,6 +132,7 @@ def _generate_summary_with_gemini(
             important_emails=important_emails,
             assessments=assessments,
             action_items=action_items,
+            language=settings.language,
         )
     )
     return parsed

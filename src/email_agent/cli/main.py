@@ -31,6 +31,7 @@ def summarize(run_date: str | None = None) -> None:
     typer.echo(f"Date: {target_date}")
     typer.echo(f"LLM enabled: {'yes' if settings.use_llm else 'no'}")
     typer.echo(f"LLM provider: {settings.llm_provider}")
+    typer.echo(f"Language: {settings.language}")
     typer.echo(f"Classification mode: {state.get('classification_mode', 'unknown')}")
     typer.echo(f"Summary mode: {state.get('summary_mode', 'unknown')}")
 

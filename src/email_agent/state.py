@@ -22,3 +22,4 @@ class AgentState(TypedDict, total=False):
     classification_error: str
     summary_mode: str
     summary_error: str
+    language: str

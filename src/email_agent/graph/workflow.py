@@ -98,7 +98,7 @@ def classify_emails(state: AgentState, settings: Settings) -> AgentState:
     }
 
 
-def extract_action_items(state: AgentState) -> AgentState:
+def extract_action_items(state: AgentState, settings: Settings) -> AgentState:
     """Create a simple action list from important emails."""
 
     emails_by_id = {email.id: email for email in state.get("filtered_emails", [])}
@@ -109,7 +109,7 @@ def extract_action_items(state: AgentState) -> AgentState:
             continue
 
         email = emails_by_id[assessment.email_id]
-        description = _build_action_description(email, assessment)
+        description = _build_action_description(email, assessment, settings.language)
         action_items.append(
             ActionItem(
                 description=description,
@@ -138,16 +138,28 @@ def generate_summary(state: AgentState, settings: Settings) -> AgentState:
 
     if important_assessments:
         top_labels = ", ".join(
-            f"{count} {label.replace('_', ' ')}" for label, count in counts.most_common()
+            _format_label_count(label, count, settings.language)
+            for label, count in counts.most_common()
         )
-        overview = (
-            f"You received {len(important_assessments)} important emails today. "
-            f"Main categories: {top_labels}."
-        )
-        headline = "Important emails need your attention today."
+        if settings.language == "de":
+            overview = (
+                f"Du hast heute {len(important_assessments)} wichtige E-Mails erhalten. "
+                f"Wichtigste Kategorien: {top_labels}."
+            )
+            headline = "Wichtige E-Mails brauchen heute deine Aufmerksamkeit."
+        else:
+            overview = (
+                f"You received {len(important_assessments)} important emails today. "
+                f"Main categories: {top_labels}."
+            )
+            headline = "Important emails need your attention today."
     else:
-        overview = "Your inbox was quiet today. No important emails were detected."
-        headline = "No urgent email follow-up today."
+        if settings.language == "de":
+            overview = "Dein Posteingang war heute ruhig. Es wurden keine wichtigen E-Mails erkannt."
+            headline = "Heute gibt es keine dringenden E-Mail-Aufgaben."
+        else:
+            overview = "Your inbox was quiet today. No important emails were detected."
+            headline = "No urgent email follow-up today."
 
     if important_emails and llm_is_available(settings):
         try:
@@ -204,7 +216,7 @@ def build_workflow(settings: Settings):
     graph.add_node("normalize_emails", normalize_emails)
     graph.add_node("filter_emails", filter_emails)
     graph.add_node("classify_emails", lambda state: classify_emails(state, settings))
-    graph.add_node("extract_action_items", extract_action_items)
+    graph.add_node("extract_action_items", lambda state: extract_action_items(state, settings))
     graph.add_node("generate_summary", lambda state: generate_summary(state, settings))
     graph.add_node("save_run", lambda state: save_run(state, settings))
 
@@ -224,10 +236,26 @@ def run_workflow(initial_state: AgentState, settings: Settings) -> AgentState:
     """Run the compiled LangGraph workflow."""
 
     app = build_workflow(settings)
-    return app.invoke(initial_state)
+    return app.invoke({**initial_state, "language": settings.language})
 
 
-def _build_action_description(email: NormalizedEmail, assessment: EmailAssessment) -> str:
+def _build_action_description(
+    email: NormalizedEmail,
+    assessment: EmailAssessment,
+    language: str,
+) -> str:
+    if language == "de":
+        if assessment.label == "urgent":
+            return (
+                f"Antworte moeglichst schnell auf '{email.subject}' von {email.sender} "
+                "oder pruefe die Nachricht sofort."
+            )
+        if assessment.label == "meeting":
+            return f"Pruefe die Besprechungsdetails in '{email.subject}'."
+        if assessment.label == "finance":
+            return f"Pruefe die finanzbezogene Nachricht '{email.subject}'."
+        return f"Bearbeite die E-Mail '{email.subject}' von {email.sender} weiter."
+
     if assessment.label == "urgent":
         return f"Reply to or review '{email.subject}' from {email.sender} as soon as possible."
     if assessment.label == "meeting":
@@ -235,3 +263,18 @@ def _build_action_description(email: NormalizedEmail, assessment: EmailAssessmen
     if assessment.label == "finance":
         return f"Review the financial message '{email.subject}'."
     return f"Follow up on '{email.subject}' from {email.sender}."
+
+
+def _format_label_count(label: str, count: int, language: str) -> str:
+    if language == "de":
+        translations = {
+            "urgent": "dringend",
+            "needs_reply": "Antwort noetig",
+            "meeting": "Besprechung",
+            "finance": "Finanzen",
+            "info": "Info",
+            "low_priority": "niedrige Prioritaet",
+        }
+        return f"{count} {translations.get(label, label)}"
+
+    return f"{count} {label.replace('_', ' ')}"

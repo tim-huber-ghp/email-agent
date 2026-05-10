@@ -9,6 +9,7 @@ def test_workflow_returns_state() -> None:
         EMAIL_AGENT_MODEL="test-model",
         EMAIL_AGENT_USE_LLM=False,
         EMAIL_AGENT_LLM_PROVIDER="openai",
+        EMAIL_AGENT_LANGUAGE="en",
     )
     initial_state = {"provider": "mock", "run_date": "2026-05-10"}
 
