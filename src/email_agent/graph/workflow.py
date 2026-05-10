@@ -10,6 +10,7 @@ from langgraph.graph import END, START, StateGraph
 from email_agent.config import Settings
 from email_agent.models.email import EmailAssessment, NormalizedEmail
 from email_agent.models.summary import ActionItem, DailySummary
+from email_agent.providers.gmail import GmailProvider
 from email_agent.providers.mock import MockEmailProvider
 from email_agent.services.importance import assess_email, filter_low_value_emails
 from email_agent.services.llm import (
@@ -21,11 +22,19 @@ from email_agent.state import AgentState
 from email_agent.storage.json_store import persist_run
 
 
-def load_mock_emails(state: AgentState, settings: Settings) -> AgentState:
-    """Fetch fixture emails for the requested date."""
+def load_emails(state: AgentState, settings: Settings) -> AgentState:
+    """Fetch raw emails from the selected provider."""
 
     target_date = date.fromisoformat(state["run_date"])
-    provider = MockEmailProvider(settings.data_dir / "fixtures" / "mock_emails.json")
+    provider_name = state.get("provider", "mock")
+
+    if provider_name == "gmail":
+        provider = GmailProvider(settings)
+    elif provider_name == "mock":
+        provider = MockEmailProvider(settings.data_dir / "fixtures" / "mock_emails.json")
+    else:
+        raise ValueError(f"Unsupported provider: {provider_name}")
+
     return {
         **state,
         "raw_emails": provider.fetch_emails_for_day(target_date),
@@ -213,7 +222,7 @@ def build_workflow(settings: Settings):
     """Compile the LangGraph workflow for the MVP."""
 
     graph = StateGraph(AgentState)
-    graph.add_node("load_mock_emails", lambda state: load_mock_emails(state, settings))
+    graph.add_node("load_emails", lambda state: load_emails(state, settings))
     graph.add_node("normalize_emails", normalize_emails)
     graph.add_node("filter_emails", filter_emails)
     graph.add_node("classify_emails", lambda state: classify_emails(state, settings))
@@ -221,8 +230,8 @@ def build_workflow(settings: Settings):
     graph.add_node("generate_summary", lambda state: generate_summary(state, settings))
     graph.add_node("save_run", lambda state: save_run(state, settings))
 
-    graph.add_edge(START, "load_mock_emails")
-    graph.add_edge("load_mock_emails", "normalize_emails")
+    graph.add_edge(START, "load_emails")
+    graph.add_edge("load_emails", "normalize_emails")
     graph.add_edge("normalize_emails", "filter_emails")
     graph.add_edge("filter_emails", "classify_emails")
     graph.add_edge("classify_emails", "extract_action_items")

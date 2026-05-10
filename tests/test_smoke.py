@@ -20,3 +20,4 @@ def test_workflow_returns_state() -> None:
     assert result["persisted_run_dir"].endswith("2026-05-10")
     assert result["classification_mode"] == "heuristic"
     assert result["summary_mode"] == "heuristic"
+    assert result["language"] == "en"

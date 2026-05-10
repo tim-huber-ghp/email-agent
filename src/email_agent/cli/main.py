@@ -7,6 +7,7 @@ import typer
 
 from email_agent.config import get_settings
 from email_agent.graph.workflow import run_workflow
+from email_agent.providers.gmail import GmailProvider
 
 app = typer.Typer(help="Email summary agent CLI.", no_args_is_help=True)
 
@@ -21,12 +22,15 @@ def main() -> None:
 
 
 @app.command()
-def summarize(run_date: str | None = None) -> None:
-    """Run the mock summary flow."""
+def summarize(
+    run_date: str | None = None,
+    provider: str = typer.Option("mock", help="Email provider to use: mock or gmail."),
+) -> None:
+    """Run the summary flow."""
 
     settings = get_settings()
     target_date = run_date or date.today().isoformat()
-    state = run_workflow({"provider": "mock", "run_date": target_date}, settings)
+    state = run_workflow({"provider": provider, "run_date": target_date}, settings)
     summary = state["summary"]
     run_dir = Path(state["persisted_run_dir"])
     is_german = settings.language == "de"
@@ -73,6 +77,19 @@ def summarize(run_date: str | None = None) -> None:
     typer.echo("")
     typer.echo(
         f"{_label('Saved run artifacts to', 'Gespeicherte Laufdateien unter', is_german)}: {run_dir}"
+    )
+
+
+@app.command("gmail-auth")
+def gmail_auth() -> None:
+    """Run Gmail desktop OAuth and save the token locally."""
+
+    settings = get_settings()
+    is_german = settings.language == "de"
+    token_path = GmailProvider(settings).authenticate()
+    typer.echo(
+        f"{_label('Gmail token saved to', 'Gmail-Token gespeichert unter', is_german)}: "
+        f"{token_path}"
     )
 
 

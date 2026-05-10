@@ -58,3 +58,24 @@ It can also use Gemini when:
 - `GOOGLE_API_KEY` is set
 - `EMAIL_AGENT_USE_LLM=true`
 - `EMAIL_AGENT_LLM_PROVIDER=gemini`
+
+## Gmail Setup
+
+To use Gmail read-only access:
+
+1. In Google Cloud, enable the Gmail API.
+2. Create a Desktop OAuth client.
+3. Download the OAuth client JSON and place it at `./credentials.json`.
+4. Run the local OAuth flow:
+
+```bash
+.venv/bin/python -m email_agent.cli.main gmail-auth
+```
+
+5. Then summarize real Gmail messages:
+
+```bash
+.venv/bin/python -m email_agent.cli.main summarize --provider gmail
+```
+
+The token is stored locally at `data/auth/gmail_token.json`.
