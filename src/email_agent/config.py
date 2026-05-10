@@ -12,6 +12,7 @@ class Settings(BaseSettings):
     env: str = Field(default="development", alias="EMAIL_AGENT_ENV")
     data_dir: Path = Field(default=Path("./data"), alias="EMAIL_AGENT_DATA_DIR")
     model_name: str = Field(default="gpt-4.1-mini", alias="EMAIL_AGENT_MODEL")
+    use_llm: bool = Field(default=False, alias="EMAIL_AGENT_USE_LLM")
     openai_api_key: str | None = Field(default=None, alias="OPENAI_API_KEY")
     gmail_client_id: str | None = Field(default=None, alias="GMAIL_CLIENT_ID")
     gmail_client_secret: str | None = Field(default=None, alias="GMAIL_CLIENT_SECRET")

@@ -47,3 +47,8 @@ The project can already:
 - classify likely important messages with simple heuristics
 - print a daily summary in the terminal
 - save run artifacts under `data/runs/YYYY-MM-DD/`
+
+It can also use an OpenAI model for classification and summary generation when:
+
+- `OPENAI_API_KEY` is set
+- `EMAIL_AGENT_USE_LLM=true`

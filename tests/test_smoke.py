@@ -7,6 +7,7 @@ def test_workflow_returns_state() -> None:
         EMAIL_AGENT_DATA_DIR="./data",
         EMAIL_AGENT_ENV="test",
         EMAIL_AGENT_MODEL="test-model",
+        EMAIL_AGENT_USE_LLM=False,
     )
     initial_state = {"provider": "mock", "run_date": "2026-05-10"}
 

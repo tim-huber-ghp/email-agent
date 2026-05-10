@@ -12,6 +12,11 @@ from email_agent.models.email import EmailAssessment, NormalizedEmail
 from email_agent.models.summary import ActionItem, DailySummary
 from email_agent.providers.mock import MockEmailProvider
 from email_agent.services.importance import assess_email, filter_low_value_emails
+from email_agent.services.llm import (
+    classify_emails_with_llm,
+    generate_summary_with_llm,
+    llm_is_available,
+)
 from email_agent.state import AgentState
 from email_agent.storage.json_store import persist_run
 
@@ -67,12 +72,17 @@ def filter_emails(state: AgentState) -> AgentState:
     }
 
 
-def classify_emails(state: AgentState) -> AgentState:
+def classify_emails(state: AgentState, settings: Settings) -> AgentState:
     """Assign an importance label to each candidate email."""
 
-    assessments: list[EmailAssessment] = []
-    for email in state.get("filtered_emails", []):
-        assessments.append(assess_email(email))
+    filtered_emails = state.get("filtered_emails", [])
+    if llm_is_available(settings):
+        try:
+            assessments = classify_emails_with_llm(filtered_emails, settings)
+        except Exception:
+            assessments = [assess_email(email) for email in filtered_emails]
+    else:
+        assessments = [assess_email(email) for email in filtered_emails]
 
     return {
         **state,
@@ -106,12 +116,15 @@ def extract_action_items(state: AgentState) -> AgentState:
     }
 
 
-def generate_summary(state: AgentState) -> AgentState:
+def generate_summary(state: AgentState, settings: Settings) -> AgentState:
     """Build a readable daily summary from heuristic results."""
 
     assessments = state.get("assessments", [])
     important_assessments = [item for item in assessments if item.importance_score >= 50]
     counts = Counter(item.label for item in important_assessments)
+    filtered_emails = state.get("filtered_emails", [])
+    important_email_ids = [item.email_id for item in important_assessments]
+    important_emails = [email for email in filtered_emails if email.id in important_email_ids]
 
     if important_assessments:
         top_labels = ", ".join(
@@ -126,10 +139,23 @@ def generate_summary(state: AgentState) -> AgentState:
         overview = "Your inbox was quiet today. No important emails were detected."
         headline = "No urgent email follow-up today."
 
+    if important_emails and llm_is_available(settings):
+        try:
+            llm_summary = generate_summary_with_llm(
+                important_emails=important_emails,
+                assessments=important_assessments,
+                action_items=state.get("action_items", []),
+                settings=settings,
+            )
+            headline = llm_summary.headline
+            overview = llm_summary.overview
+        except Exception:
+            pass
+
     summary = DailySummary(
         headline=headline,
         overview=overview,
-        important_email_ids=[item.email_id for item in important_assessments],
+        important_email_ids=important_email_ids,
         action_items=state.get("action_items", []),
         counts_by_label=dict(counts),
     )
@@ -163,9 +189,9 @@ def build_workflow(settings: Settings):
     graph.add_node("load_mock_emails", lambda state: load_mock_emails(state, settings))
     graph.add_node("normalize_emails", normalize_emails)
     graph.add_node("filter_emails", filter_emails)
-    graph.add_node("classify_emails", classify_emails)
+    graph.add_node("classify_emails", lambda state: classify_emails(state, settings))
     graph.add_node("extract_action_items", extract_action_items)
-    graph.add_node("generate_summary", generate_summary)
+    graph.add_node("generate_summary", lambda state: generate_summary(state, settings))
     graph.add_node("save_run", lambda state: save_run(state, settings))
 
     graph.add_edge(START, "load_mock_emails")

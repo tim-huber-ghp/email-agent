@@ -29,6 +29,7 @@ def summarize(run_date: str | None = None) -> None:
     typer.echo(f"Environment: {settings.env}")
     typer.echo(f"Provider: {state.get('provider', 'unknown')}")
     typer.echo(f"Date: {target_date}")
+    typer.echo(f"LLM enabled: {'yes' if settings.use_llm else 'no'}")
     typer.echo("")
     typer.echo(summary.headline)
     typer.echo(summary.overview)
