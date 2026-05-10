@@ -179,6 +179,28 @@ h3 {
   border: 1px solid rgba(27, 28, 29, 0.08);
 }
 
+.run-picker {
+  display: grid;
+  gap: 8px;
+}
+
+.run-picker span {
+  color: var(--muted);
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.run-picker select {
+  width: 100%;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 12px 14px;
+  background: rgba(255, 255, 255, 0.8);
+  color: var(--ink);
+  font: inherit;
+}
+
 .signal-label {
   color: var(--muted);
   font-size: 0.82rem;
@@ -265,6 +287,11 @@ h3 {
   border-radius: 28px;
   padding: 22px;
   animation: rise 650ms ease-out both;
+}
+
+.empty-state {
+  max-width: 720px;
+  margin: 10vh auto 0;
 }
 
 .panel-wide {

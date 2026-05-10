@@ -84,6 +84,8 @@ The token is stored locally at `data/auth/gmail_token.json`.
 
 A small React + Vite dashboard lives in `frontend/`.
 
+It reads real saved run artifacts from `data/runs/` through a tiny Vite-powered local API during development and preview.
+
 To run it locally:
 
 ```bash
