@@ -52,3 +52,9 @@ It can also use an OpenAI model for classification and summary generation when:
 
 - `OPENAI_API_KEY` is set
 - `EMAIL_AGENT_USE_LLM=true`
+
+It can also use Gemini when:
+
+- `GOOGLE_API_KEY` is set
+- `EMAIL_AGENT_USE_LLM=true`
+- `EMAIL_AGENT_LLM_PROVIDER=gemini`

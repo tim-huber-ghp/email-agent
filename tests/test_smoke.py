@@ -8,6 +8,7 @@ def test_workflow_returns_state() -> None:
         EMAIL_AGENT_ENV="test",
         EMAIL_AGENT_MODEL="test-model",
         EMAIL_AGENT_USE_LLM=False,
+        EMAIL_AGENT_LLM_PROVIDER="openai",
     )
     initial_state = {"provider": "mock", "run_date": "2026-05-10"}
 
@@ -16,3 +17,5 @@ def test_workflow_returns_state() -> None:
     assert result["provider"] == "mock"
     assert result["summary"].important_email_ids
     assert result["persisted_run_dir"].endswith("2026-05-10")
+    assert result["classification_mode"] == "heuristic"
+    assert result["summary_mode"] == "heuristic"

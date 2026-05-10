@@ -18,3 +18,7 @@ class AgentState(TypedDict, total=False):
     summary: DailySummary
     run_date: str
     persisted_run_dir: str
+    classification_mode: str
+    classification_error: str
+    summary_mode: str
+    summary_error: str

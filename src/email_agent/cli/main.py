@@ -30,6 +30,15 @@ def summarize(run_date: str | None = None) -> None:
     typer.echo(f"Provider: {state.get('provider', 'unknown')}")
     typer.echo(f"Date: {target_date}")
     typer.echo(f"LLM enabled: {'yes' if settings.use_llm else 'no'}")
+    typer.echo(f"LLM provider: {settings.llm_provider}")
+    typer.echo(f"Classification mode: {state.get('classification_mode', 'unknown')}")
+    typer.echo(f"Summary mode: {state.get('summary_mode', 'unknown')}")
+
+    if state.get("classification_error"):
+        typer.echo(f"Classification fallback reason: {state['classification_error']}")
+    if state.get("summary_error"):
+        typer.echo(f"Summary fallback reason: {state['summary_error']}")
+
     typer.echo("")
     typer.echo(summary.headline)
     typer.echo(summary.overview)

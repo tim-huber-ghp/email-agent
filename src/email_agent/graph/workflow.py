@@ -76,17 +76,25 @@ def classify_emails(state: AgentState, settings: Settings) -> AgentState:
     """Assign an importance label to each candidate email."""
 
     filtered_emails = state.get("filtered_emails", [])
+    classification_mode = "heuristic"
+    classification_error = ""
+
     if llm_is_available(settings):
         try:
             assessments = classify_emails_with_llm(filtered_emails, settings)
-        except Exception:
+            classification_mode = "llm"
+        except Exception as exc:
             assessments = [assess_email(email) for email in filtered_emails]
+            classification_mode = "heuristic_fallback"
+            classification_error = str(exc)
     else:
         assessments = [assess_email(email) for email in filtered_emails]
 
     return {
         **state,
         "assessments": assessments,
+        "classification_mode": classification_mode,
+        "classification_error": classification_error,
     }
 
 
@@ -125,6 +133,8 @@ def generate_summary(state: AgentState, settings: Settings) -> AgentState:
     filtered_emails = state.get("filtered_emails", [])
     important_email_ids = [item.email_id for item in important_assessments]
     important_emails = [email for email in filtered_emails if email.id in important_email_ids]
+    summary_mode = "heuristic"
+    summary_error = ""
 
     if important_assessments:
         top_labels = ", ".join(
@@ -149,8 +159,10 @@ def generate_summary(state: AgentState, settings: Settings) -> AgentState:
             )
             headline = llm_summary.headline
             overview = llm_summary.overview
-        except Exception:
-            pass
+            summary_mode = "llm"
+        except Exception as exc:
+            summary_mode = "heuristic_fallback"
+            summary_error = str(exc)
 
     summary = DailySummary(
         headline=headline,
@@ -163,6 +175,8 @@ def generate_summary(state: AgentState, settings: Settings) -> AgentState:
     return {
         **state,
         "summary": summary,
+        "summary_mode": summary_mode,
+        "summary_error": summary_error,
     }
 
 
