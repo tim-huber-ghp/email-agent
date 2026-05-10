@@ -1,0 +1,47 @@
+[
+  {
+    "id": "msg-001",
+    "sender": "manager@example.com",
+    "subject": "Urgent: Please reply with the final budget today",
+    "received_at": "2026-05-10T08:15:00",
+    "snippet": "Need your confirmation before 4pm today.",
+    "body_preview": "Please reply with the updated budget numbers before the deadline today.",
+    "labels": ["work", "inbox"]
+  },
+  {
+    "id": "msg-002",
+    "sender": "calendar@company.com",
+    "subject": "Team meeting invite for Monday",
+    "received_at": "2026-05-10T09:30:00",
+    "snippet": "Zoom link and agenda attached.",
+    "body_preview": "You have been invited to a strategy meeting. Please confirm attendance.",
+    "labels": ["calendar", "inbox"]
+  },
+  {
+    "id": "msg-003",
+    "sender": "billing@saas.io",
+    "subject": "Invoice for May subscription",
+    "received_at": "2026-05-10T11:10:00",
+    "snippet": "Your monthly invoice is ready.",
+    "body_preview": "Please review the billing statement and payment status.",
+    "labels": ["finance"]
+  },
+  {
+    "id": "msg-004",
+    "sender": "newsletter@shop.com",
+    "subject": "Spring sale newsletter",
+    "received_at": "2026-05-10T12:45:00",
+    "snippet": "Big discounts this weekend.",
+    "body_preview": "Unsubscribe any time. Promo code inside.",
+    "labels": ["promotions"]
+  },
+  {
+    "id": "msg-005",
+    "sender": "colleague@example.com",
+    "subject": "FYI: project update",
+    "received_at": "2026-05-10T15:00:00",
+    "snippet": "Sharing the latest project update.",
+    "body_preview": "No action needed yet, but please let me know if you see blockers.",
+    "labels": ["work"]
+  }
+]
