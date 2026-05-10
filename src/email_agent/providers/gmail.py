@@ -4,7 +4,10 @@ from __future__ import annotations
 
 import base64
 from datetime import UTC, date, datetime, timedelta
+from email.utils import parseaddr
+import html
 from pathlib import Path
+import re
 
 from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
@@ -118,10 +121,10 @@ def _gmail_payload_to_record(message: dict) -> dict:
     received_at = datetime.fromtimestamp(int(message["internalDate"]) / 1000, tz=UTC)
 
     return {
-        "sender": headers.get("from", "Unknown sender"),
+        "sender": _format_sender(headers.get("from", "Unknown sender")),
         "subject": headers.get("subject", "(No subject)"),
         "received_at": received_at.isoformat(),
-        "snippet": message.get("snippet", ""),
+        "snippet": _normalize_whitespace(message.get("snippet", "")),
         "labels": message.get("labelIds", []),
         "body_preview": body_preview,
     }
@@ -140,15 +143,32 @@ def _extract_body_text(payload: dict) -> str:
     body_data = payload.get("body", {}).get("data")
 
     if mime_type == "text/plain" and body_data:
-        return _decode_base64_text(body_data)
+        return _normalize_whitespace(_decode_base64_text(body_data))
+
+    if mime_type == "text/html" and body_data:
+        return _html_to_text(_decode_base64_text(body_data))
+
+    plain_parts: list[str] = []
+    html_parts: list[str] = []
 
     for part in payload.get("parts", []):
         text = _extract_body_text(part)
-        if text:
-            return text
+        if not text:
+            continue
+
+        if part.get("mimeType") == "text/html":
+            html_parts.append(text)
+        else:
+            plain_parts.append(text)
+
+    if plain_parts:
+        return _normalize_whitespace("\n".join(plain_parts))
+
+    if html_parts:
+        return _normalize_whitespace("\n".join(html_parts))
 
     if body_data:
-        return _decode_base64_text(body_data)
+        return _normalize_whitespace(_decode_base64_text(body_data))
 
     return ""
 
@@ -157,3 +177,32 @@ def _decode_base64_text(value: str) -> str:
     padding = "=" * (-len(value) % 4)
     decoded = base64.urlsafe_b64decode(value + padding)
     return decoded.decode("utf-8", errors="ignore").strip()
+
+
+def _format_sender(raw_sender: str) -> str:
+    """Prefer a readable name, otherwise fall back to the email address."""
+
+    name, address = parseaddr(raw_sender)
+    if name:
+        return _normalize_whitespace(name.strip('" '))
+    if address:
+        return address
+    return raw_sender
+
+
+def _html_to_text(value: str) -> str:
+    """Convert simple HTML email content into readable plain text."""
+
+    no_scripts = re.sub(r"<(script|style).*?>.*?</\\1>", " ", value, flags=re.IGNORECASE | re.DOTALL)
+    with_breaks = re.sub(r"<br\\s*/?>", "\n", no_scripts, flags=re.IGNORECASE)
+    with_blocks = re.sub(r"</(p|div|li|tr|h[1-6])>", "\n", with_breaks, flags=re.IGNORECASE)
+    no_tags = re.sub(r"<[^>]+>", " ", with_blocks)
+    unescaped = html.unescape(no_tags)
+    return _normalize_whitespace(unescaped)
+
+
+def _normalize_whitespace(value: str) -> str:
+    value = value.replace("\r", "\n")
+    value = re.sub(r"\n{3,}", "\n\n", value)
+    value = re.sub(r"[ \t]+", " ", value)
+    return value.strip()
