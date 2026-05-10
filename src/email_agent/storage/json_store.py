@@ -40,16 +40,17 @@ def _write_text(path: Path, content: str) -> None:
 
 
 def _render_summary_text(summary: DailySummary, assessments: list[EmailAssessment]) -> str:
+    is_german = summary.language == "de"
     lines = [summary.headline, "", summary.overview, ""]
 
     if summary.action_items:
-        lines.append("Action items:")
+        lines.append("Naechste Schritte:" if is_german else "Action items:")
         for item in summary.action_items:
             lines.append(f"- {item.description}")
         lines.append("")
 
     if assessments:
-        lines.append("Assessments:")
+        lines.append("Bewertungen:" if is_german else "Assessments:")
         for assessment in assessments:
             lines.append(
                 f"- {assessment.email_id}: {assessment.label} "

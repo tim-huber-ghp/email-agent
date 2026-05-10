@@ -182,6 +182,7 @@ def generate_summary(state: AgentState, settings: Settings) -> AgentState:
         important_email_ids=important_email_ids,
         action_items=state.get("action_items", []),
         counts_by_label=dict(counts),
+        language=settings.language,
     )
 
     return {

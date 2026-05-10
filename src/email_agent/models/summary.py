@@ -21,3 +21,4 @@ class DailySummary(BaseModel):
     action_items: list[ActionItem] = Field(default_factory=list)
     headline: str = ""
     counts_by_label: dict[str, int] = Field(default_factory=dict)
+    language: str = "en"
