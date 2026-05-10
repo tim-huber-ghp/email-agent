@@ -79,3 +79,22 @@ To use Gmail read-only access:
 ```
 
 The token is stored locally at `data/auth/gmail_token.json`.
+
+## Frontend
+
+A small React + Vite dashboard lives in `frontend/`.
+
+To run it locally:
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+To build it:
+
+```bash
+cd frontend
+npm run build
+```
