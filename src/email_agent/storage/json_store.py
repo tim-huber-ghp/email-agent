@@ -6,6 +6,7 @@ import json
 from pathlib import Path
 
 from email_agent.models.email import EmailAssessment, NormalizedEmail
+from email_agent.models.run_metadata import RunMetadata
 from email_agent.models.summary import DailySummary
 
 
@@ -15,6 +16,7 @@ def persist_run(
     emails: list[NormalizedEmail],
     assessments: list[EmailAssessment],
     summary: DailySummary,
+    run_metadata: RunMetadata,
 ) -> Path:
     """Save workflow artifacts to a date-based run directory."""
 
@@ -27,6 +29,7 @@ def persist_run(
         [assessment.model_dump(mode="json") for assessment in assessments],
     )
     _write_json(run_dir / "summary.json", summary.model_dump(mode="json"))
+    _write_json(run_dir / "run_metadata.json", run_metadata.model_dump(mode="json"))
     _write_text(run_dir / "summary.txt", _render_summary_text(summary, assessments))
     return run_dir
 

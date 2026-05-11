@@ -192,6 +192,30 @@ function App() {
                     <dt>Execution</dt>
                     <dd>{dashboardData.executionMode}</dd>
                   </div>
+                  <div>
+                    <dt>Email count</dt>
+                    <dd>{dashboardData.metadata.emailCount}</dd>
+                  </div>
+                  <div>
+                    <dt>Important count</dt>
+                    <dd>{dashboardData.metadata.importantEmailCount}</dd>
+                  </div>
+                  <div>
+                    <dt>LLM classification</dt>
+                    <dd>{dashboardData.metadata.llmClassificationEnabled}</dd>
+                  </div>
+                  <div>
+                    <dt>LLM summary</dt>
+                    <dd>{dashboardData.metadata.llmSummaryEnabled}</dd>
+                  </div>
+                  <div>
+                    <dt>Classification route</dt>
+                    <dd>{dashboardData.metadata.classificationMode}</dd>
+                  </div>
+                  <div>
+                    <dt>Summary route</dt>
+                    <dd>{dashboardData.metadata.summaryMode}</dd>
+                  </div>
                 </dl>
               </div>
             ) : null}
@@ -329,11 +353,11 @@ function buildDashboardData(runData) {
     return null;
   }
 
-  const { summary, assessments, emails, date } = runData;
+  const { summary, assessments, emails, date, runMetadata } = runData;
   const importantIds = new Set(summary.important_email_ids ?? []);
   const importantEmails = emails.filter((email) => importantIds.has(email.id));
   const assessmentMap = new Map(assessments.map((item) => [item.email_id, item]));
-  const provider = importantEmails[0]?.source ?? emails[0]?.source ?? "unknown";
+  const provider = runMetadata?.provider ?? importantEmails[0]?.source ?? emails[0]?.source ?? "unknown";
   const language = summary.language === "de" ? "German" : "English";
 
   return {
@@ -345,8 +369,8 @@ function buildDashboardData(runData) {
     dateBadge: date,
     provider: provider.toUpperCase(),
     language,
-    llmProvider: "From backend config",
-    executionMode: detectExecutionMode(summary, assessments),
+    llmProvider: runMetadata?.llm_provider ?? "Unknown",
+    executionMode: formatMode(runMetadata?.summary_mode) ?? detectExecutionMode(summary, assessments),
     stats: [
       { label: "Important mails", value: String(summary.important_email_ids.length), tone: "coral" },
       { label: "Action items", value: String(summary.action_items.length), tone: "gold" },
@@ -378,10 +402,18 @@ function buildDashboardData(runData) {
       },
       {
         title: "Next step",
-        detail: "Add metadata such as exact LLM provider and workflow route to the saved run payload.",
+        detail: "Add token, cost, and latency telemetry to the saved run metadata.",
         status: "next",
       },
     ],
+    metadata: {
+      emailCount: runMetadata?.email_count ?? emails.length,
+      importantEmailCount: runMetadata?.important_email_count ?? summary.important_email_ids.length,
+      llmClassificationEnabled: yesNo(runMetadata?.llm_classification_enabled),
+      llmSummaryEnabled: yesNo(runMetadata?.llm_summary_enabled),
+      classificationMode: formatMode(runMetadata?.classification_mode),
+      summaryMode: formatMode(runMetadata?.summary_mode),
+    },
   };
 }
 
@@ -414,4 +446,16 @@ function detectExecutionMode(summary, assessments) {
   }
 
   return "Unknown";
+}
+
+function formatMode(value) {
+  if (!value) {
+    return "Unknown";
+  }
+
+  return value.replace(/_/g, " ");
+}
+
+function yesNo(value) {
+  return value ? "Yes" : "No";
 }

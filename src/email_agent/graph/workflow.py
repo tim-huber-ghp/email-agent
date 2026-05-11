@@ -9,6 +9,7 @@ from langgraph.graph import END, START, StateGraph
 
 from email_agent.config import Settings
 from email_agent.models.email import EmailAssessment, NormalizedEmail
+from email_agent.models.run_metadata import RunMetadata
 from email_agent.models.summary import ActionItem, DailySummary
 from email_agent.providers.gmail import GmailProvider
 from email_agent.providers.mock import MockEmailProvider
@@ -278,16 +279,33 @@ def generate_quiet_summary(state: AgentState, settings: Settings) -> AgentState:
 def save_run(state: AgentState, settings: Settings) -> AgentState:
     """Persist the run output for inspection and future UI work."""
 
+    run_metadata = RunMetadata(
+        run_date=state["run_date"],
+        provider=state.get("provider", "unknown"),
+        language=settings.language,
+        llm_enabled=state.get("llm_enabled_for_run", False),
+        llm_provider=settings.llm_provider,
+        llm_classification_enabled=state.get("llm_classification_enabled_for_run", False),
+        llm_summary_enabled=state.get("llm_summary_enabled_for_run", False),
+        classification_mode=state.get("classification_mode", "unknown"),
+        summary_mode=state.get("summary_mode", "unknown"),
+        email_count=len(state.get("emails", [])),
+        filtered_email_count=len(state.get("filtered_emails", [])),
+        important_email_count=len(state.get("summary", DailySummary(overview="", headline="")).important_email_ids),
+    )
+
     run_dir = persist_run(
         data_dir=settings.data_dir,
         run_date=state["run_date"],
         emails=state.get("emails", []),
         assessments=state.get("assessments", []),
         summary=state["summary"],
+        run_metadata=run_metadata,
     )
     return {
         **state,
         "persisted_run_dir": str(run_dir),
+        "run_metadata": run_metadata,
     }
 
 

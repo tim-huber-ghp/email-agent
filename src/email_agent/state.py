@@ -3,6 +3,7 @@
 from typing import TypedDict
 
 from email_agent.models.email import EmailAssessment, NormalizedEmail, RawEmail
+from email_agent.models.run_metadata import RunMetadata
 from email_agent.models.summary import ActionItem, DailySummary
 
 
@@ -28,3 +29,4 @@ class AgentState(TypedDict, total=False):
     llm_enabled_for_run: bool
     llm_classification_enabled_for_run: bool
     llm_summary_enabled_for_run: bool
+    run_metadata: RunMetadata

@@ -93,9 +93,10 @@ async function readRunMeta(date) {
   const runDir = path.join(runsDir, date);
 
   try {
-    const [summaryRaw, emailsRaw] = await Promise.all([
+    const [summaryRaw, emailsRaw, metadata] = await Promise.all([
       fs.readFile(path.join(runDir, "summary.json"), "utf-8"),
       fs.readFile(path.join(runDir, "emails.json"), "utf-8"),
+      readOptionalJson(path.join(runDir, "run_metadata.json")),
     ]);
 
     const summary = JSON.parse(summaryRaw);
@@ -104,9 +105,10 @@ async function readRunMeta(date) {
 
     return {
       date,
-      provider,
-      language: summary.language ?? "en",
+      provider: metadata?.provider ?? provider,
+      language: metadata?.language ?? summary.language ?? "en",
       isMock: provider === "mock",
+      executionMode: metadata?.summary_mode ?? "unknown",
     };
   } catch {
     return {
@@ -114,23 +116,73 @@ async function readRunMeta(date) {
       provider: "unknown",
       language: "en",
       isMock: false,
+      executionMode: "unknown",
     };
   }
 }
 
 async function readRun(date) {
   const runDir = path.join(runsDir, date);
-  const [summaryRaw, assessmentsRaw, emailsRaw] = await Promise.all([
+  const [summaryRaw, assessmentsRaw, emailsRaw, metadata] = await Promise.all([
     fs.readFile(path.join(runDir, "summary.json"), "utf-8"),
     fs.readFile(path.join(runDir, "assessments.json"), "utf-8"),
     fs.readFile(path.join(runDir, "emails.json"), "utf-8"),
+    readOptionalJson(path.join(runDir, "run_metadata.json")),
   ]);
+
+  const summary = JSON.parse(summaryRaw);
+  const assessments = JSON.parse(assessmentsRaw);
+  const emails = JSON.parse(emailsRaw);
 
   return {
     date,
-    summary: JSON.parse(summaryRaw),
-    assessments: JSON.parse(assessmentsRaw),
-    emails: JSON.parse(emailsRaw),
+    summary,
+    assessments,
+    emails,
+    runMetadata:
+      metadata ??
+      buildFallbackRunMetadata({
+        date,
+        summary,
+        assessments,
+        emails,
+      }),
+  };
+}
+
+async function readOptionalJson(filePath) {
+  try {
+    const raw = await fs.readFile(filePath, "utf-8");
+    return JSON.parse(raw);
+  } catch (error) {
+    if (error && typeof error === "object" && "code" in error && error.code === "ENOENT") {
+      return null;
+    }
+    throw error;
+  }
+}
+
+function buildFallbackRunMetadata({ date, summary, assessments, emails }) {
+  const provider = emails[0]?.source ?? "unknown";
+  const importantEmailCount = Array.isArray(summary.important_email_ids)
+    ? summary.important_email_ids.length
+    : Array.isArray(assessments)
+      ? assessments.filter((assessment) => (assessment.importance_score ?? 0) >= 50).length
+      : 0;
+
+  return {
+    run_date: date,
+    provider,
+    language: summary.language ?? "en",
+    llm_enabled: false,
+    llm_provider: "unknown",
+    llm_classification_enabled: false,
+    llm_summary_enabled: false,
+    classification_mode: "unknown",
+    summary_mode: "unknown",
+    email_count: Array.isArray(emails) ? emails.length : 0,
+    filtered_email_count: Array.isArray(assessments) ? assessments.length : 0,
+    important_email_count: importantEmailCount,
   };
 }
 
