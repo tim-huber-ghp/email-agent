@@ -123,13 +123,14 @@ async function readRunMeta(date) {
 
 async function readRun(date) {
   const runDir = path.join(runsDir, date);
-  const [summaryRaw, assessmentsRaw, emailsRaw, metadata, deadlines, meetings] = await Promise.all([
+  const [summaryRaw, assessmentsRaw, emailsRaw, metadata, deadlines, meetings, subscriptions] = await Promise.all([
     fs.readFile(path.join(runDir, "summary.json"), "utf-8"),
     fs.readFile(path.join(runDir, "assessments.json"), "utf-8"),
     fs.readFile(path.join(runDir, "emails.json"), "utf-8"),
     readOptionalJson(path.join(runDir, "run_metadata.json")),
     readOptionalJson(path.join(runDir, "deadlines.json")),
     readOptionalJson(path.join(runDir, "meetings.json")),
+    readOptionalJson(path.join(runDir, "subscriptions.json")),
   ]);
 
   const summary = JSON.parse(summaryRaw);
@@ -143,6 +144,7 @@ async function readRun(date) {
     emails,
     deadlines: deadlines ?? [],
     meetings: meetings ?? [],
+    subscriptions: subscriptions ?? [],
     runMetadata:
       metadata ??
       buildFallbackRunMetadata({

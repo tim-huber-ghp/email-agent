@@ -163,15 +163,29 @@ h3 {
 }
 
 .hero-copy {
-  max-width: 58ch;
-  margin-top: 16px;
-  font-size: 1rem;
+  max-width: 44ch;
+  margin: 0;
+  font-size: 1.16rem;
+  color: var(--ink);
+  line-height: 1.7;
 }
 
 .hero-note {
-  max-width: 54ch;
-  margin-top: 12px;
-  font-size: 0.94rem;
+  max-width: 46ch;
+  margin: 14px 0 0;
+  font-size: 0.8rem;
+  letter-spacing: 0.01em;
+  color: rgba(17, 18, 20, 0.46);
+}
+
+.hero-summary-frame {
+  max-width: 58ch;
+  margin-top: 22px;
+  padding: 22px 24px;
+  border-radius: 22px;
+  background: rgba(255, 255, 255, 0.76);
+  border: 1px solid rgba(17, 18, 20, 0.06);
+  box-shadow: var(--shadow-soft);
 }
 
 .signal-card {

@@ -7,7 +7,12 @@ from pathlib import Path
 
 from email_agent.models.email import EmailAssessment, NormalizedEmail
 from email_agent.models.run_metadata import RunMetadata
-from email_agent.models.summary import DailySummary, ExtractedDeadline, ExtractedMeeting
+from email_agent.models.summary import (
+    DailySummary,
+    ExtractedDeadline,
+    ExtractedMeeting,
+    ExtractedSubscription,
+)
 
 
 def persist_run(
@@ -17,6 +22,7 @@ def persist_run(
     assessments: list[EmailAssessment],
     deadlines: list[ExtractedDeadline],
     meetings: list[ExtractedMeeting],
+    subscriptions: list[ExtractedSubscription],
     summary: DailySummary,
     run_metadata: RunMetadata,
 ) -> Path:
@@ -32,9 +38,16 @@ def persist_run(
     )
     _write_json(run_dir / "deadlines.json", [deadline.model_dump(mode="json") for deadline in deadlines])
     _write_json(run_dir / "meetings.json", [meeting.model_dump(mode="json") for meeting in meetings])
+    _write_json(
+        run_dir / "subscriptions.json",
+        [subscription.model_dump(mode="json") for subscription in subscriptions],
+    )
     _write_json(run_dir / "summary.json", summary.model_dump(mode="json"))
     _write_json(run_dir / "run_metadata.json", run_metadata.model_dump(mode="json"))
-    _write_text(run_dir / "summary.txt", _render_summary_text(summary, assessments, deadlines, meetings))
+    _write_text(
+        run_dir / "summary.txt",
+        _render_summary_text(summary, assessments, deadlines, meetings, subscriptions),
+    )
     return run_dir
 
 
@@ -51,6 +64,7 @@ def _render_summary_text(
     assessments: list[EmailAssessment],
     deadlines: list[ExtractedDeadline],
     meetings: list[ExtractedMeeting],
+    subscriptions: list[ExtractedSubscription],
 ) -> str:
     is_german = summary.language == "de"
     lines = [summary.headline, "", summary.overview, ""]
@@ -74,6 +88,18 @@ def _render_summary_text(
             detail_parts = [part for part in (item.when_hint, item.location_hint) if part]
             detail = f" ({', '.join(detail_parts)})" if detail_parts else ""
             lines.append(f"- {item.title}{detail}")
+        lines.append("")
+
+    if subscriptions:
+        lines.append("Abos:" if is_german else "Subscriptions:")
+        for item in subscriptions:
+            detail_parts = [
+                part
+                for part in (item.renewal_hint, item.amount_hint, item.cancellation_hint)
+                if part
+            ]
+            detail = f" ({', '.join(detail_parts)})" if detail_parts else ""
+            lines.append(f"- {item.service_name}{detail}")
         lines.append("")
 
     if assessments:

@@ -1,7 +1,7 @@
 from datetime import datetime
 
 from email_agent.models.email import EmailAssessment, NormalizedEmail
-from email_agent.services.extraction import extract_deadlines, extract_meetings
+from email_agent.services.extraction import extract_deadlines, extract_meetings, extract_subscriptions
 
 
 def _email(
@@ -73,3 +73,30 @@ def test_extract_meetings_picks_up_meeting_signal_and_zoom_location() -> None:
     assert meetings[0].when_hint == "Monday"
     assert meetings[0].location_hint == "Zoom"
     assert meetings[0].needs_response is True
+
+
+def test_extract_subscriptions_picks_up_monthly_billing_signal() -> None:
+    email = _email(
+        email_id="msg-3",
+        subject="Invoice for May subscription",
+        snippet="Your monthly invoice is ready.",
+        body_preview="Please review the billing statement for your $29.00 monthly plan. Cancel anytime.",
+        labels=["finance"],
+    )
+    assessments = [
+        EmailAssessment(
+            email_id="msg-3",
+            label="finance",
+            importance_score=80,
+            reason="Contains finance-related keywords.",
+            needs_action=True,
+        )
+    ]
+
+    subscriptions = extract_subscriptions([email], assessments)
+
+    assert len(subscriptions) == 1
+    assert subscriptions[0].service_name == "May Subscription"
+    assert subscriptions[0].renewal_hint == "Monthly"
+    assert subscriptions[0].cancellation_hint == "Cancel anytime"
+    assert subscriptions[0].amount_hint == "$29.00"

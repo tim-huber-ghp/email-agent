@@ -134,8 +134,12 @@ function App() {
         <div className="hero-grid">
           <div>
             <h1>{dashboardData.headline}</h1>
-            <p className="hero-copy">{dashboardData.overview}</p>
-            <p className="hero-note">{dashboardData.keyTakeaway}</p>
+            <div className="hero-summary-frame">
+              <p className="hero-copy">{dashboardData.overview}</p>
+              {dashboardData.keyTakeaway ? (
+                <p className="hero-note">{dashboardData.keyTakeaway}</p>
+              ) : null}
+            </div>
           </div>
 
           <div className="signal-card">
@@ -322,6 +326,28 @@ function App() {
         <section className="panel">
           <div className="panel-heading">
             <div>
+              <span className="section-kicker">Subscriptions</span>
+              <h2>Recurring charges</h2>
+            </div>
+          </div>
+
+          {dashboardData.subscriptions.length > 0 ? (
+            <ul className="signal-list">
+              {dashboardData.subscriptions.map((item) => (
+                <li key={`${item.sourceEmailId}-${item.serviceName}`}>
+                  <strong>{item.serviceName}</strong>
+                  <span>{formatSubscriptionDetail(item)}</span>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="panel-summary">No likely recurring subscriptions were extracted for this run.</p>
+          )}
+        </section>
+
+        <section className="panel">
+          <div className="panel-heading">
+            <div>
               <span className="section-kicker">Workflow</span>
               <h2>System path</h2>
             </div>
@@ -401,7 +427,7 @@ function buildDashboardData(runData) {
     return null;
   }
 
-  const { summary, assessments, emails, deadlines, meetings, date, runMetadata } = runData;
+  const { summary, assessments, emails, deadlines, meetings, subscriptions, date, runMetadata } = runData;
   const importantIds = new Set(summary.important_email_ids ?? []);
   const importantEmails = emails.filter((email) => importantIds.has(email.id));
   const assessmentMap = new Map(assessments.map((item) => [item.email_id, item]));
@@ -411,8 +437,7 @@ function buildDashboardData(runData) {
   return {
     headline: summary.headline,
     overview: summary.overview,
-    keyTakeaway:
-      "This view is driven by saved run artifacts, so the frontend can already inspect real summaries without waiting for a backend API.",
+    keyTakeaway: "A calmer daily brief, centered on the few things worth your attention.",
     dateLabel: formatDate(date),
     dateBadge: date,
     provider: provider.toUpperCase(),
@@ -421,7 +446,7 @@ function buildDashboardData(runData) {
     executionMode: formatMode(runMetadata?.summary_mode) ?? detectExecutionMode(summary, assessments),
     stats: [
       { label: "Important mails", value: String(summary.important_email_ids.length), tone: "coral" },
-      { label: "Action items", value: String(summary.action_items.length), tone: "gold" },
+      { label: "Subscriptions", value: String(subscriptions.length), tone: "gold" },
       { label: "Deadlines", value: String(deadlines.length), tone: "teal" },
       { label: "Meetings", value: String(meetings.length), tone: "blue" },
     ],
@@ -438,6 +463,13 @@ function buildDashboardData(runData) {
       needsResponse: item.needs_response,
       sourceEmailId: item.source_email_id,
     })),
+    subscriptions: subscriptions.map((item) => ({
+      serviceName: item.service_name,
+      renewalHint: item.renewal_hint,
+      cancellationHint: item.cancellation_hint,
+      amountHint: item.amount_hint,
+      sourceEmailId: item.source_email_id,
+    })),
     inbox: importantEmails.map((email) => ({
       sender: email.sender,
       subject: email.subject,
@@ -452,7 +484,7 @@ function buildDashboardData(runData) {
       },
       {
         title: "Structured extraction",
-        detail: `Saved ${deadlines.length} deadline signals and ${meetings.length} meeting signals as first-class artifacts.`,
+        detail: `Saved ${deadlines.length} deadline signals, ${meetings.length} meeting signals, and ${subscriptions.length} subscription signals as first-class artifacts.`,
         status: "completed",
       },
       {
@@ -526,4 +558,9 @@ function formatMeetingDetail(item) {
     parts.push("Response likely needed");
   }
   return parts.join(" · ") || "No additional meeting details extracted.";
+}
+
+function formatSubscriptionDetail(item) {
+  const parts = [item.renewalHint, item.amountHint, item.cancellationHint].filter(Boolean);
+  return parts.join(" · ") || "Likely recurring subscription signal detected.";
 }

@@ -13,7 +13,7 @@ from email_agent.models.run_metadata import RunMetadata
 from email_agent.models.summary import ActionItem, DailySummary
 from email_agent.providers.gmail import GmailProvider
 from email_agent.providers.mock import MockEmailProvider
-from email_agent.services.extraction import extract_deadlines, extract_meetings
+from email_agent.services.extraction import extract_deadlines, extract_meetings, extract_subscriptions
 from email_agent.services.importance import assess_email, filter_low_value_emails
 from email_agent.services.llm import (
     classify_emails_with_llm,
@@ -177,6 +177,19 @@ def extract_meetings_node(state: AgentState) -> AgentState:
     }
 
 
+def extract_subscriptions_node(state: AgentState) -> AgentState:
+    """Extract recurring subscription signals from assessed emails."""
+
+    subscriptions = extract_subscriptions(
+        emails=state.get("filtered_emails", []),
+        assessments=state.get("assessments", []),
+    )
+    return {
+        **state,
+        "subscriptions": subscriptions,
+    }
+
+
 def generate_summary_with_llm_node(state: AgentState, settings: Settings) -> AgentState:
     """Try LLM-based summary generation for important emails."""
 
@@ -299,6 +312,7 @@ def generate_quiet_summary(state: AgentState, settings: Settings) -> AgentState:
         "action_items": [],
         "deadlines": [],
         "meetings": [],
+        "subscriptions": [],
         "summary": summary,
         "classification_mode": state.get("classification_mode", "heuristic"),
         "summary_mode": "heuristic",
@@ -331,6 +345,7 @@ def save_run(state: AgentState, settings: Settings) -> AgentState:
         assessments=state.get("assessments", []),
         deadlines=state.get("deadlines", []),
         meetings=state.get("meetings", []),
+        subscriptions=state.get("subscriptions", []),
         summary=state["summary"],
         run_metadata=run_metadata,
     )
@@ -356,6 +371,7 @@ def build_workflow(settings: Settings):
     graph.add_node("extract_action_items", lambda state: extract_action_items(state, settings))
     graph.add_node("extract_deadlines", lambda state: extract_deadlines_node(state, settings))
     graph.add_node("extract_meetings", extract_meetings_node)
+    graph.add_node("extract_subscriptions", extract_subscriptions_node)
     graph.add_node(
         "generate_summary_with_llm",
         lambda state: generate_summary_with_llm_node(state, settings),
@@ -403,8 +419,9 @@ def build_workflow(settings: Settings):
         },
     )
     graph.add_edge("extract_deadlines", "extract_meetings")
+    graph.add_edge("extract_meetings", "extract_subscriptions")
     graph.add_conditional_edges(
-        "extract_meetings",
+        "extract_subscriptions",
         route_after_structured_extraction,
         {
             "summary_with_llm": "generate_summary_with_llm",

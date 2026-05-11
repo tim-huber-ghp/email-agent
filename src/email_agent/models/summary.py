@@ -31,6 +31,16 @@ class ExtractedMeeting(BaseModel):
     needs_response: bool = False
 
 
+class ExtractedSubscription(BaseModel):
+    """A recurring subscription or renewal signal found in an email."""
+
+    service_name: str
+    source_email_id: str
+    renewal_hint: str = ""
+    cancellation_hint: str = ""
+    amount_hint: str = ""
+
+
 class DailySummary(BaseModel):
     """Final end-of-day summary shown to the user."""
 

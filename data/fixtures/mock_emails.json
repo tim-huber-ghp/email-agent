@@ -23,7 +23,7 @@
     "subject": "Invoice for May subscription",
     "received_at": "2026-05-10T11:10:00",
     "snippet": "Your monthly invoice is ready.",
-    "body_preview": "Please review the billing statement and payment status.",
+    "body_preview": "Please review the billing statement for your $29.00 monthly plan. Cancel anytime from the billing portal.",
     "labels": ["finance"]
   },
   {

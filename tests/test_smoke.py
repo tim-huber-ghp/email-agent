@@ -33,6 +33,7 @@ def test_workflow_returns_state() -> None:
     assert result["language"] == "en"
     assert result["deadlines"]
     assert result["meetings"]
+    assert result["subscriptions"]
 
 
 def test_routing_functions_cover_key_branches() -> None:

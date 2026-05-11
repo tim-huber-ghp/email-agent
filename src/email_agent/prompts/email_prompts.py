@@ -79,7 +79,7 @@ def summary_messages(
     if language == "de":
         user_prompt = (
             "Schreibe eine Ueberschrift und eine kurze Zusammenfassung der wichtigen E-Mails "
-            "von heute.\n\n"
+            "von heute. Verwende als kurze, natuerliche Ueberschrift bevorzugt 'Dein Tag in E-Mails'.\n\n"
             "Wichtige E-Mails:\n\n"
             + "\n\n---\n\n".join(blocks)
             + "\n\nVorgeschlagene naechste Schritte:\n"

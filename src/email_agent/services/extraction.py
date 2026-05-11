@@ -1,11 +1,11 @@
-"""Heuristic structured extraction for deadlines and meetings."""
+"""Heuristic structured extraction for deadlines, meetings, and subscriptions."""
 
 from __future__ import annotations
 
 import re
 
 from email_agent.models.email import EmailAssessment, NormalizedEmail
-from email_agent.models.summary import ExtractedDeadline, ExtractedMeeting
+from email_agent.models.summary import ExtractedDeadline, ExtractedMeeting, ExtractedSubscription
 
 DAY_HINT_PATTERN = re.compile(
     r"\b(today|tomorrow|monday|tuesday|wednesday|thursday|friday|saturday|sunday)\b",
@@ -14,6 +14,17 @@ DAY_HINT_PATTERN = re.compile(
 TIME_HINT_PATTERN = re.compile(
     r"\b(?:by|before|at)\s+\d{1,2}(?::\d{2})?\s?(?:am|pm)\b",
     re.IGNORECASE,
+)
+AMOUNT_PATTERN = re.compile(r"(?:\$|eur\s?|€)\s?\d+(?:[.,]\d{2})?", re.IGNORECASE)
+SUBSCRIPTION_KEYWORDS = (
+    "subscription",
+    "monthly",
+    "annual",
+    "renewal",
+    "renews",
+    "auto-renew",
+    "billing",
+    "plan",
 )
 
 
@@ -88,6 +99,40 @@ def extract_meetings(
     return meetings
 
 
+def extract_subscriptions(
+    emails: list[NormalizedEmail],
+    assessments: list[EmailAssessment],
+) -> list[ExtractedSubscription]:
+    """Extract recurring subscription signals from finance-like emails."""
+
+    emails_by_id = {email.id: email for email in emails}
+    subscriptions: list[ExtractedSubscription] = []
+
+    for assessment in assessments:
+        email = emails_by_id.get(assessment.email_id)
+        if email is None:
+            continue
+
+        haystack = _email_text(email)
+        if assessment.label != "finance" and not any(keyword in haystack for keyword in SUBSCRIPTION_KEYWORDS):
+            continue
+
+        if not any(keyword in haystack for keyword in SUBSCRIPTION_KEYWORDS):
+            continue
+
+        subscriptions.append(
+            ExtractedSubscription(
+                service_name=_extract_service_name(email),
+                source_email_id=email.id,
+                renewal_hint=_extract_subscription_renewal_hint(email),
+                cancellation_hint=_extract_cancellation_hint(haystack),
+                amount_hint=_extract_amount_hint(haystack),
+            )
+        )
+
+    return subscriptions
+
+
 def _extract_due_hint(email: NormalizedEmail) -> str:
     haystack = _email_text(email)
     time_match = TIME_HINT_PATTERN.search(haystack)
@@ -124,6 +169,44 @@ def _extract_location_hint(haystack: str) -> str:
     if "teams" in haystack:
         return "Microsoft Teams"
     return ""
+
+
+def _extract_subscription_renewal_hint(email: NormalizedEmail) -> str:
+    haystack = _email_text(email)
+    day_match = DAY_HINT_PATTERN.search(haystack)
+    if "monthly" in haystack:
+        return "Monthly"
+    if "annual" in haystack or "yearly" in haystack:
+        return "Annual"
+    if day_match:
+        return _normalize_match(day_match.group(0))
+    return ""
+
+
+def _extract_cancellation_hint(haystack: str) -> str:
+    if "cancel anytime" in haystack:
+        return "Cancel anytime"
+    if "unsubscribe" in haystack:
+        return "Unsubscribe available"
+    if "cancel" in haystack:
+        return "Cancellation mentioned"
+    return ""
+
+
+def _extract_amount_hint(haystack: str) -> str:
+    amount_match = AMOUNT_PATTERN.search(haystack)
+    if amount_match:
+        return " ".join(amount_match.group(0).split())
+    return ""
+
+
+def _extract_service_name(email: NormalizedEmail) -> str:
+    subject = email.subject.strip()
+    for separator in (" for ", " from ", " - ", ": "):
+        if separator in subject.lower():
+            parts = re.split(separator, subject, flags=re.IGNORECASE, maxsplit=1)
+            return parts[-1].strip().title()
+    return subject
 
 
 def _normalize_match(value: str) -> str:
