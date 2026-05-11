@@ -15,7 +15,6 @@ def classification_messages(emails: list[NormalizedEmail]) -> list[dict[str, str
                     f"Email ID: {email.id}",
                     f"Sender: {email.sender}",
                     f"Subject: {email.subject}",
-                    f"Received At: {email.received_at.isoformat()}",
                     f"Labels: {', '.join(email.labels) if email.labels else 'none'}",
                     f"Snippet: {email.snippet}",
                     f"Body Preview: {email.body_preview or 'none'}",
@@ -64,7 +63,6 @@ def summary_messages(
                     f"Subject: {email.subject}",
                     f"Label: {assessment.label}",
                     f"Importance: {assessment.importance_score}",
-                    f"Reason: {assessment.reason}",
                     f"Snippet: {email.snippet}",
                 ]
             )
@@ -76,7 +74,7 @@ def summary_messages(
         else "Write the output in English."
     )
     no_action_text = "- Keine" if language == "de" else "- None"
-    action_text = "\n".join(f"- {item.description}" for item in action_items) or no_action_text
+    action_text = "\n".join(f"- {item.description}" for item in action_items[:4]) or no_action_text
 
     if language == "de":
         user_prompt = (

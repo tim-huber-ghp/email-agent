@@ -26,3 +26,5 @@ class AgentState(TypedDict, total=False):
     has_emails: bool
     has_filtered_emails: bool
     llm_enabled_for_run: bool
+    llm_classification_enabled_for_run: bool
+    llm_summary_enabled_for_run: bool

@@ -17,6 +17,8 @@ def test_workflow_returns_state() -> None:
         EMAIL_AGENT_USE_LLM=False,
         EMAIL_AGENT_LLM_PROVIDER="openai",
         EMAIL_AGENT_LANGUAGE="en",
+        EMAIL_AGENT_USE_LLM_CLASSIFICATION=False,
+        EMAIL_AGENT_USE_LLM_SUMMARY=True,
     )
     initial_state = {"provider": "mock", "run_date": "2026-05-10"}
 
@@ -35,14 +37,14 @@ def test_routing_functions_cover_key_branches() -> None:
     assert route_after_normalization({"has_emails": True}) == "filter_emails"
 
     assert route_after_filtering({"has_filtered_emails": False}) == "quiet_summary"
-    assert route_after_filtering({"has_filtered_emails": True, "llm_enabled_for_run": False}) == "classify_with_heuristics"
-    assert route_after_filtering({"has_filtered_emails": True, "llm_enabled_for_run": True}) == "classify_with_llm"
+    assert route_after_filtering({"has_filtered_emails": True, "llm_classification_enabled_for_run": False}) == "classify_with_heuristics"
+    assert route_after_filtering({"has_filtered_emails": True, "llm_classification_enabled_for_run": True}) == "classify_with_llm"
 
     assert route_after_llm_classification({"classification_mode": "llm"}) == "extract_action_items"
     assert route_after_llm_classification({"classification_mode": "llm_failed"}) == "classify_with_heuristics"
 
-    assert route_after_action_items({"llm_enabled_for_run": True}) == "summary_with_llm"
-    assert route_after_action_items({"llm_enabled_for_run": False}) == "summary_with_heuristics"
+    assert route_after_action_items({"llm_summary_enabled_for_run": True}) == "summary_with_llm"
+    assert route_after_action_items({"llm_summary_enabled_for_run": False}) == "summary_with_heuristics"
 
     assert route_after_llm_summary({"summary_mode": "llm"}) == "save_run"
     assert route_after_llm_summary({"summary_mode": "llm_failed"}) == "summary_with_heuristics"

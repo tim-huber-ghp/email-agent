@@ -15,6 +15,17 @@ class Settings(BaseSettings):
     use_llm: bool = Field(default=False, alias="EMAIL_AGENT_USE_LLM")
     llm_provider: str = Field(default="openai", alias="EMAIL_AGENT_LLM_PROVIDER")
     language: str = Field(default="en", alias="EMAIL_AGENT_LANGUAGE")
+    use_llm_classification: bool = Field(
+        default=False,
+        alias="EMAIL_AGENT_USE_LLM_CLASSIFICATION",
+    )
+    use_llm_summary: bool = Field(
+        default=True,
+        alias="EMAIL_AGENT_USE_LLM_SUMMARY",
+    )
+    llm_max_emails: int = Field(default=6, alias="EMAIL_AGENT_LLM_MAX_EMAILS")
+    llm_max_snippet_chars: int = Field(default=120, alias="EMAIL_AGENT_LLM_MAX_SNIPPET_CHARS")
+    llm_max_body_chars: int = Field(default=180, alias="EMAIL_AGENT_LLM_MAX_BODY_CHARS")
     openai_api_key: str | None = Field(default=None, alias="OPENAI_API_KEY")
     google_api_key: str | None = Field(default=None, alias="GOOGLE_API_KEY")
     gmail_credentials_file: Path = Field(

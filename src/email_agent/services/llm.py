@@ -48,11 +48,25 @@ def llm_is_available(settings: Settings) -> bool:
     return False
 
 
+def llm_classification_enabled(settings: Settings) -> bool:
+    """Return whether this run should use an LLM for classification."""
+
+    return llm_is_available(settings) and settings.use_llm_classification
+
+
+def llm_summary_enabled(settings: Settings) -> bool:
+    """Return whether this run should use an LLM for summary generation."""
+
+    return llm_is_available(settings) and settings.use_llm_summary
+
+
 def classify_emails_with_llm(
     emails: list[NormalizedEmail],
     settings: Settings,
 ) -> list[EmailAssessment]:
     """Classify emails with structured model output."""
+
+    emails = _prepare_emails_for_llm(emails, settings)
 
     if settings.llm_provider == "gemini":
         return _classify_emails_with_gemini(emails, settings)
@@ -76,6 +90,11 @@ def generate_summary_with_llm(
     settings: Settings,
 ) -> SummaryNarrative:
     """Generate the final summary narrative with the model."""
+
+    important_emails = _prepare_emails_for_llm(important_emails, settings)
+    important_email_ids = {email.id for email in important_emails}
+    assessments = [assessment for assessment in assessments if assessment.email_id in important_email_ids]
+    action_items = [item for item in action_items if item.source_email_id in important_email_ids][:4]
 
     if settings.llm_provider == "gemini":
         return _generate_summary_with_gemini(
@@ -136,3 +155,31 @@ def _generate_summary_with_gemini(
         )
     )
     return parsed
+
+
+def _prepare_emails_for_llm(
+    emails: list[NormalizedEmail],
+    settings: Settings,
+) -> list[NormalizedEmail]:
+    """Trim email content before sending it to a model."""
+
+    prepared: list[NormalizedEmail] = []
+
+    for email in emails[: settings.llm_max_emails]:
+        prepared.append(
+            email.model_copy(
+                update={
+                    "snippet": _truncate(email.snippet, settings.llm_max_snippet_chars),
+                    "body_preview": _truncate(email.body_preview, settings.llm_max_body_chars),
+                }
+            )
+        )
+
+    return prepared
+
+
+def _truncate(value: str, max_chars: int) -> str:
+    value = value.strip()
+    if len(value) <= max_chars:
+        return value
+    return value[: max_chars - 1].rstrip() + "…"

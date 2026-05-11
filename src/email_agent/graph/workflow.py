@@ -16,7 +16,9 @@ from email_agent.services.importance import assess_email, filter_low_value_email
 from email_agent.services.llm import (
     classify_emails_with_llm,
     generate_summary_with_llm,
+    llm_classification_enabled,
     llm_is_available,
+    llm_summary_enabled,
 )
 from email_agent.state import AgentState
 from email_agent.storage.json_store import persist_run
@@ -373,6 +375,8 @@ def run_workflow(initial_state: AgentState, settings: Settings) -> AgentState:
             **initial_state,
             "language": settings.language,
             "llm_enabled_for_run": llm_is_available(settings),
+            "llm_classification_enabled_for_run": llm_classification_enabled(settings),
+            "llm_summary_enabled_for_run": llm_summary_enabled(settings),
         }
     )
 
@@ -384,7 +388,11 @@ def route_after_normalization(state: AgentState) -> str:
 def route_after_filtering(state: AgentState) -> str:
     if not state.get("has_filtered_emails"):
         return "quiet_summary"
-    return "classify_with_llm" if state.get("llm_enabled_for_run") else "classify_with_heuristics"
+    return (
+        "classify_with_llm"
+        if state.get("llm_classification_enabled_for_run")
+        else "classify_with_heuristics"
+    )
 
 
 def route_after_llm_classification(state: AgentState) -> str:
@@ -392,7 +400,7 @@ def route_after_llm_classification(state: AgentState) -> str:
 
 
 def route_after_action_items(state: AgentState) -> str:
-    return "summary_with_llm" if state.get("llm_enabled_for_run") else "summary_with_heuristics"
+    return "summary_with_llm" if state.get("llm_summary_enabled_for_run") else "summary_with_heuristics"
 
 
 def route_after_llm_summary(state: AgentState) -> str:

@@ -43,6 +43,14 @@ def summarize(
         f"{'ja' if is_german and settings.use_llm else 'nein' if is_german else 'yes' if settings.use_llm else 'no'}"
     )
     typer.echo(f"{_label('LLM provider', 'LLM-Anbieter', is_german)}: {settings.llm_provider}")
+    typer.echo(
+        f"{_label('LLM classification', 'LLM-Klassifizierung', is_german)}: "
+        f"{'ja' if is_german and settings.use_llm_classification else 'nein' if is_german else 'yes' if settings.use_llm_classification else 'no'}"
+    )
+    typer.echo(
+        f"{_label('LLM summary', 'LLM-Zusammenfassung', is_german)}: "
+        f"{'ja' if is_german and settings.use_llm_summary else 'nein' if is_german else 'yes' if settings.use_llm_summary else 'no'}"
+    )
     typer.echo(f"{_label('Language', 'Sprache', is_german)}: {settings.language}")
     typer.echo(
         f"{_label('Classification mode', 'Klassifizierungsmodus', is_german)}: "
