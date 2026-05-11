@@ -2,10 +2,24 @@
 
 from datetime import date
 from pathlib import Path
+import warnings
+
+try:
+    from langchain_core._api.deprecation import LangChainPendingDeprecationWarning
+except Exception:  # pragma: no cover - defensive import fallback
+    LangChainPendingDeprecationWarning = Warning
+
+warnings.filterwarnings(
+    "ignore",
+    message=r"The default value of `allowed_objects` will change in a future version\..*",
+    category=LangChainPendingDeprecationWarning,
+    module=r"langgraph\.cache\.base(\..*)?",
+)
 
 import typer
 
 from email_agent.config import get_settings
+from email_agent.evaluation import run_heuristic_evaluation, save_evaluation_report
 from email_agent.graph.workflow import run_workflow
 from email_agent.providers.gmail import GmailProvider
 
@@ -98,6 +112,60 @@ def gmail_auth() -> None:
     typer.echo(
         f"{_label('Gmail token saved to', 'Gmail-Token gespeichert unter', is_german)}: "
         f"{token_path}"
+    )
+
+
+@app.command()
+def evaluate(
+    dataset: str = typer.Option(
+        "data/eval/labeled_emails.json",
+        help="Path to the labeled evaluation dataset.",
+    ),
+) -> None:
+    """Run the offline evaluation harness on labeled emails."""
+
+    settings = get_settings()
+    is_german = settings.language == "de"
+    dataset_path = Path(dataset)
+    report = run_heuristic_evaluation(dataset_path)
+    output_path = settings.data_dir / "eval" / "reports" / "heuristic_report.json"
+    save_evaluation_report(report, output_path)
+
+    typer.echo(f"{_label('Dataset', 'Datensatz', is_german)}: {dataset_path}")
+    typer.echo(f"{_label('Examples', 'Beispiele', is_german)}: {report.total_examples}")
+    typer.echo("")
+    typer.echo(
+        f"{_label('Label accuracy', 'Label-Genauigkeit', is_german)}: "
+        f"{report.label_accuracy:.3f}"
+    )
+    _print_metric(_label("Important email", "Wichtige E-Mails", is_german), report.important_email)
+    _print_metric(_label("Needs action", "Aktion noetig", is_german), report.needs_action)
+    _print_metric(_label("Deadlines", "Fristen", is_german), report.deadline_extraction)
+    _print_metric(_label("Meetings", "Besprechungen", is_german), report.meeting_extraction)
+    _print_metric(_label("Subscriptions", "Abos", is_german), report.subscription_extraction)
+
+    if report.mismatches:
+        typer.echo("")
+        typer.echo(_label("Label mismatches:", "Label-Abweichungen:", is_german))
+        for item in report.mismatches[:8]:
+            typer.echo(
+                f"- {item['subject']}: expected {item['expected_label']}, "
+                f"predicted {item['predicted_label']}"
+            )
+
+    typer.echo("")
+    typer.echo(
+        f"{_label('Saved evaluation report to', 'Evaluationsbericht gespeichert unter', is_german)}: "
+        f"{output_path}"
+    )
+
+
+def _print_metric(label: str, metric: object) -> None:
+    typer.echo(
+        f"{label}: "
+        f"precision {metric.precision:.3f}, "
+        f"recall {metric.recall:.3f}, "
+        f"tp {metric.true_positives}, fp {metric.false_positives}, fn {metric.false_negatives}"
     )
 
 

@@ -26,6 +26,18 @@ A LangGraph-based Python project that reads emails, identifies important message
 3. Copy `.env.example` to `.env`
 4. Run the mock workflow: `.venv/bin/python -m email_agent.cli.main summarize --run-date 2026-05-10`
 
+## Short Commands
+
+Use these from the repo root:
+
+```bash
+make run-gmail
+make run-mock
+make run-mock-fast
+make run-eval
+make frontend
+```
+
 ## Repository Layout
 
 ```text
