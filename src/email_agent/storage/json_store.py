@@ -7,7 +7,7 @@ from pathlib import Path
 
 from email_agent.models.email import EmailAssessment, NormalizedEmail
 from email_agent.models.run_metadata import RunMetadata
-from email_agent.models.summary import DailySummary
+from email_agent.models.summary import DailySummary, ExtractedDeadline, ExtractedMeeting
 
 
 def persist_run(
@@ -15,6 +15,8 @@ def persist_run(
     run_date: str,
     emails: list[NormalizedEmail],
     assessments: list[EmailAssessment],
+    deadlines: list[ExtractedDeadline],
+    meetings: list[ExtractedMeeting],
     summary: DailySummary,
     run_metadata: RunMetadata,
 ) -> Path:
@@ -28,9 +30,11 @@ def persist_run(
         run_dir / "assessments.json",
         [assessment.model_dump(mode="json") for assessment in assessments],
     )
+    _write_json(run_dir / "deadlines.json", [deadline.model_dump(mode="json") for deadline in deadlines])
+    _write_json(run_dir / "meetings.json", [meeting.model_dump(mode="json") for meeting in meetings])
     _write_json(run_dir / "summary.json", summary.model_dump(mode="json"))
     _write_json(run_dir / "run_metadata.json", run_metadata.model_dump(mode="json"))
-    _write_text(run_dir / "summary.txt", _render_summary_text(summary, assessments))
+    _write_text(run_dir / "summary.txt", _render_summary_text(summary, assessments, deadlines, meetings))
     return run_dir
 
 
@@ -42,7 +46,12 @@ def _write_text(path: Path, content: str) -> None:
     path.write_text(content, encoding="utf-8")
 
 
-def _render_summary_text(summary: DailySummary, assessments: list[EmailAssessment]) -> str:
+def _render_summary_text(
+    summary: DailySummary,
+    assessments: list[EmailAssessment],
+    deadlines: list[ExtractedDeadline],
+    meetings: list[ExtractedMeeting],
+) -> str:
     is_german = summary.language == "de"
     lines = [summary.headline, "", summary.overview, ""]
 
@@ -50,6 +59,21 @@ def _render_summary_text(summary: DailySummary, assessments: list[EmailAssessmen
         lines.append("Naechste Schritte:" if is_german else "Action items:")
         for item in summary.action_items:
             lines.append(f"- {item.description}")
+        lines.append("")
+
+    if deadlines:
+        lines.append("Fristen:" if is_german else "Deadlines:")
+        for item in deadlines:
+            detail = f" ({item.due_hint})" if item.due_hint else ""
+            lines.append(f"- {item.description}{detail}")
+        lines.append("")
+
+    if meetings:
+        lines.append("Besprechungen:" if is_german else "Meetings:")
+        for item in meetings:
+            detail_parts = [part for part in (item.when_hint, item.location_hint) if part]
+            detail = f" ({', '.join(detail_parts)})" if detail_parts else ""
+            lines.append(f"- {item.title}{detail}")
         lines.append("")
 
     if assessments:

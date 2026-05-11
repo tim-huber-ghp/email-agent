@@ -5,6 +5,7 @@ from email_agent.graph.workflow import (
     route_after_llm_classification,
     route_after_llm_summary,
     route_after_normalization,
+    route_after_structured_extraction,
     run_workflow,
 )
 
@@ -30,6 +31,8 @@ def test_workflow_returns_state() -> None:
     assert result["classification_mode"] == "heuristic"
     assert result["summary_mode"] == "heuristic"
     assert result["language"] == "en"
+    assert result["deadlines"]
+    assert result["meetings"]
 
 
 def test_routing_functions_cover_key_branches() -> None:
@@ -43,8 +46,10 @@ def test_routing_functions_cover_key_branches() -> None:
     assert route_after_llm_classification({"classification_mode": "llm"}) == "extract_action_items"
     assert route_after_llm_classification({"classification_mode": "llm_failed"}) == "classify_with_heuristics"
 
-    assert route_after_action_items({"llm_summary_enabled_for_run": True}) == "summary_with_llm"
-    assert route_after_action_items({"llm_summary_enabled_for_run": False}) == "summary_with_heuristics"
+    assert route_after_action_items({}) == "extract_deadlines"
+
+    assert route_after_structured_extraction({"llm_summary_enabled_for_run": True}) == "summary_with_llm"
+    assert route_after_structured_extraction({"llm_summary_enabled_for_run": False}) == "summary_with_heuristics"
 
     assert route_after_llm_summary({"summary_mode": "llm"}) == "save_run"
     assert route_after_llm_summary({"summary_mode": "llm_failed"}) == "summary_with_heuristics"

@@ -406,7 +406,8 @@ h3 {
 .message-list,
 .timeline,
 .story-list,
-.action-list {
+.action-list,
+.signal-list {
   margin-top: 18px;
 }
 
@@ -472,6 +473,32 @@ h3 {
 .action-list li,
 .story-list li {
   margin-bottom: 12px;
+}
+
+.signal-list {
+  list-style: none;
+  padding: 0;
+  display: grid;
+  gap: 12px;
+}
+
+.signal-list li {
+  display: grid;
+  gap: 6px;
+  padding: 16px 18px;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.72);
+  border: 1px solid rgba(17, 18, 20, 0.06);
+}
+
+.signal-list strong {
+  font-size: 0.98rem;
+  letter-spacing: -0.03em;
+}
+
+.signal-list span {
+  color: var(--muted);
+  line-height: 1.5;
 }
 
 .timeline {

@@ -4,7 +4,7 @@ from typing import TypedDict
 
 from email_agent.models.email import EmailAssessment, NormalizedEmail, RawEmail
 from email_agent.models.run_metadata import RunMetadata
-from email_agent.models.summary import ActionItem, DailySummary
+from email_agent.models.summary import ActionItem, DailySummary, ExtractedDeadline, ExtractedMeeting
 
 
 class AgentState(TypedDict, total=False):
@@ -16,6 +16,8 @@ class AgentState(TypedDict, total=False):
     filtered_emails: list[NormalizedEmail]
     assessments: list[EmailAssessment]
     action_items: list[ActionItem]
+    deadlines: list[ExtractedDeadline]
+    meetings: list[ExtractedMeeting]
     summary: DailySummary
     run_date: str
     persisted_run_dir: str

@@ -13,6 +13,7 @@ from email_agent.models.run_metadata import RunMetadata
 from email_agent.models.summary import ActionItem, DailySummary
 from email_agent.providers.gmail import GmailProvider
 from email_agent.providers.mock import MockEmailProvider
+from email_agent.services.extraction import extract_deadlines, extract_meetings
 from email_agent.services.importance import assess_email, filter_low_value_emails
 from email_agent.services.llm import (
     classify_emails_with_llm,
@@ -149,6 +150,33 @@ def extract_action_items(state: AgentState, settings: Settings) -> AgentState:
     }
 
 
+def extract_deadlines_node(state: AgentState, settings: Settings) -> AgentState:
+    """Extract lightweight deadline signals from assessed emails."""
+
+    deadlines = extract_deadlines(
+        emails=state.get("filtered_emails", []),
+        assessments=state.get("assessments", []),
+        language=settings.language,
+    )
+    return {
+        **state,
+        "deadlines": deadlines,
+    }
+
+
+def extract_meetings_node(state: AgentState) -> AgentState:
+    """Extract lightweight meeting signals from assessed emails."""
+
+    meetings = extract_meetings(
+        emails=state.get("filtered_emails", []),
+        assessments=state.get("assessments", []),
+    )
+    return {
+        **state,
+        "meetings": meetings,
+    }
+
+
 def generate_summary_with_llm_node(state: AgentState, settings: Settings) -> AgentState:
     """Try LLM-based summary generation for important emails."""
 
@@ -269,6 +297,8 @@ def generate_quiet_summary(state: AgentState, settings: Settings) -> AgentState:
         **state,
         "assessments": [],
         "action_items": [],
+        "deadlines": [],
+        "meetings": [],
         "summary": summary,
         "classification_mode": state.get("classification_mode", "heuristic"),
         "summary_mode": "heuristic",
@@ -299,6 +329,8 @@ def save_run(state: AgentState, settings: Settings) -> AgentState:
         run_date=state["run_date"],
         emails=state.get("emails", []),
         assessments=state.get("assessments", []),
+        deadlines=state.get("deadlines", []),
+        meetings=state.get("meetings", []),
         summary=state["summary"],
         run_metadata=run_metadata,
     )
@@ -322,6 +354,8 @@ def build_workflow(settings: Settings):
     )
     graph.add_node("classify_emails_with_heuristics", classify_emails_with_heuristics_node)
     graph.add_node("extract_action_items", lambda state: extract_action_items(state, settings))
+    graph.add_node("extract_deadlines", lambda state: extract_deadlines_node(state, settings))
+    graph.add_node("extract_meetings", extract_meetings_node)
     graph.add_node(
         "generate_summary_with_llm",
         lambda state: generate_summary_with_llm_node(state, settings),
@@ -364,6 +398,14 @@ def build_workflow(settings: Settings):
     graph.add_conditional_edges(
         "extract_action_items",
         route_after_action_items,
+        {
+            "extract_deadlines": "extract_deadlines",
+        },
+    )
+    graph.add_edge("extract_deadlines", "extract_meetings")
+    graph.add_conditional_edges(
+        "extract_meetings",
+        route_after_structured_extraction,
         {
             "summary_with_llm": "generate_summary_with_llm",
             "summary_with_heuristics": "generate_summary_with_heuristics",
@@ -418,6 +460,10 @@ def route_after_llm_classification(state: AgentState) -> str:
 
 
 def route_after_action_items(state: AgentState) -> str:
+    return "extract_deadlines"
+
+
+def route_after_structured_extraction(state: AgentState) -> str:
     return "summary_with_llm" if state.get("llm_summary_enabled_for_run") else "summary_with_heuristics"
 
 

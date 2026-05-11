@@ -264,11 +264,59 @@ function App() {
             </div>
           </div>
 
-          <ol className="action-list">
-            {dashboardData.actions.map((item) => (
-              <li key={item}>{item}</li>
-            ))}
-          </ol>
+          {dashboardData.actions.length > 0 ? (
+            <ol className="action-list">
+              {dashboardData.actions.map((item) => (
+                <li key={item}>{item}</li>
+              ))}
+            </ol>
+          ) : (
+            <p className="panel-summary">No follow-up actions were extracted for this run.</p>
+          )}
+        </section>
+
+        <section className="panel">
+          <div className="panel-heading">
+            <div>
+              <span className="section-kicker">Deadlines</span>
+              <h2>Time-sensitive items</h2>
+            </div>
+          </div>
+
+          {dashboardData.deadlines.length > 0 ? (
+            <ul className="signal-list">
+              {dashboardData.deadlines.map((item) => (
+                <li key={`${item.sourceEmailId}-${item.description}`}>
+                  <strong>{item.description}</strong>
+                  <span>{item.dueHint || "No explicit due hint found."}</span>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="panel-summary">No explicit deadline signals were extracted for this run.</p>
+          )}
+        </section>
+
+        <section className="panel">
+          <div className="panel-heading">
+            <div>
+              <span className="section-kicker">Meetings</span>
+              <h2>Calendar signals</h2>
+            </div>
+          </div>
+
+          {dashboardData.meetings.length > 0 ? (
+            <ul className="signal-list">
+              {dashboardData.meetings.map((item) => (
+                <li key={`${item.sourceEmailId}-${item.title}`}>
+                  <strong>{item.title}</strong>
+                  <span>{formatMeetingDetail(item)}</span>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="panel-summary">No meeting invitations or scheduling signals were extracted.</p>
+          )}
         </section>
 
         <section className="panel">
@@ -353,7 +401,7 @@ function buildDashboardData(runData) {
     return null;
   }
 
-  const { summary, assessments, emails, date, runMetadata } = runData;
+  const { summary, assessments, emails, deadlines, meetings, date, runMetadata } = runData;
   const importantIds = new Set(summary.important_email_ids ?? []);
   const importantEmails = emails.filter((email) => importantIds.has(email.id));
   const assessmentMap = new Map(assessments.map((item) => [item.email_id, item]));
@@ -374,10 +422,22 @@ function buildDashboardData(runData) {
     stats: [
       { label: "Important mails", value: String(summary.important_email_ids.length), tone: "coral" },
       { label: "Action items", value: String(summary.action_items.length), tone: "gold" },
-      { label: "Provider", value: provider, tone: "teal" },
-      { label: "Language", value: summary.language, tone: "blue" },
+      { label: "Deadlines", value: String(deadlines.length), tone: "teal" },
+      { label: "Meetings", value: String(meetings.length), tone: "blue" },
     ],
     actions: summary.action_items.map((item) => item.description),
+    deadlines: deadlines.map((item) => ({
+      description: item.description,
+      dueHint: item.due_hint,
+      sourceEmailId: item.source_email_id,
+    })),
+    meetings: meetings.map((item) => ({
+      title: item.title,
+      whenHint: item.when_hint,
+      locationHint: item.location_hint,
+      needsResponse: item.needs_response,
+      sourceEmailId: item.source_email_id,
+    })),
     inbox: importantEmails.map((email) => ({
       sender: email.sender,
       subject: email.subject,
@@ -391,8 +451,8 @@ function buildDashboardData(runData) {
         status: "completed",
       },
       {
-        title: "Assessment join",
-        detail: `Mapped ${assessments.length} assessments to normalized emails for UI rendering.`,
+        title: "Structured extraction",
+        detail: `Saved ${deadlines.length} deadline signals and ${meetings.length} meeting signals as first-class artifacts.`,
         status: "completed",
       },
       {
@@ -458,4 +518,12 @@ function formatMode(value) {
 
 function yesNo(value) {
   return value ? "Yes" : "No";
+}
+
+function formatMeetingDetail(item) {
+  const parts = [item.whenHint, item.locationHint].filter(Boolean);
+  if (item.needsResponse) {
+    parts.push("Response likely needed");
+  }
+  return parts.join(" · ") || "No additional meeting details extracted.";
 }
