@@ -6,6 +6,9 @@ function App() {
   const [runData, setRunData] = useState(null);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
+  const [showInspector, setShowInspector] = useState(false);
+  const [showSystemPath, setShowSystemPath] = useState(false);
+  const [showProjectValue, setShowProjectValue] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -136,8 +139,19 @@ function App() {
           </div>
 
           <div className="signal-card">
-            <div className="signal-label">Daily summary</div>
-            <div className="signal-date">{dashboardData.dateLabel}</div>
+            <div className="signal-topline">
+              <div>
+                <div className="signal-label">Daily summary</div>
+                <div className="signal-date">{dashboardData.dateLabel}</div>
+              </div>
+              <button
+                type="button"
+                className="inspector-toggle"
+                onClick={() => setShowInspector((current) => !current)}
+              >
+                {showInspector ? "Hide details" : "Show details"}
+              </button>
+            </div>
             <label className="run-picker">
               <span>Saved run</span>
               <select value={selectedRunDate} onChange={handleRunChange}>
@@ -149,24 +163,38 @@ function App() {
               </select>
             </label>
 
-            <dl className="meta-grid">
-              <div>
-                <dt>Provider</dt>
-                <dd>{dashboardData.provider}</dd>
+            <div className="summary-status-row">
+              <span className="summary-status">{dashboardData.executionMode}</span>
+              <span className="summary-subtle">{dashboardData.provider}</span>
+            </div>
+
+            {showInspector ? (
+              <div className="inspector-card">
+                <div className="inspector-header">
+                  <span className="section-kicker">Inspector</span>
+                  <span className="inspector-note">Technical metadata</span>
+                </div>
+
+                <dl className="meta-grid">
+                  <div>
+                    <dt>Provider</dt>
+                    <dd>{dashboardData.provider}</dd>
+                  </div>
+                  <div>
+                    <dt>Language</dt>
+                    <dd>{dashboardData.language}</dd>
+                  </div>
+                  <div>
+                    <dt>LLM</dt>
+                    <dd>{dashboardData.llmProvider}</dd>
+                  </div>
+                  <div>
+                    <dt>Execution</dt>
+                    <dd>{dashboardData.executionMode}</dd>
+                  </div>
+                </dl>
               </div>
-              <div>
-                <dt>Language</dt>
-                <dd>{dashboardData.language}</dd>
-              </div>
-              <div>
-                <dt>LLM</dt>
-                <dd>{dashboardData.llmProvider}</dd>
-              </div>
-              <div>
-                <dt>Execution</dt>
-                <dd>{dashboardData.executionMode}</dd>
-              </div>
-            </dl>
+            ) : null}
           </div>
         </div>
       </header>
@@ -223,21 +251,36 @@ function App() {
           <div className="panel-heading">
             <div>
               <span className="section-kicker">Workflow</span>
-              <h2>LangGraph path</h2>
+              <h2>System path</h2>
             </div>
+            <button
+              type="button"
+              className="section-toggle"
+              onClick={() => setShowSystemPath((current) => !current)}
+            >
+              {showSystemPath ? "Hide" : "View"}
+            </button>
           </div>
 
-          <div className="timeline">
-            {dashboardData.timeline.map((item) => (
-              <div className="timeline-item" key={item.title}>
-                <div className={`timeline-dot status-${item.status}`} />
-                <div>
-                  <h3>{item.title}</h3>
-                  <p>{item.detail}</p>
-                </div>
+          <p className="panel-summary">
+            A compact system overview is available when you want to inspect the workflow path.
+          </p>
+
+          {showSystemPath ? (
+            <div className="details-drawer">
+              <div className="timeline">
+                {dashboardData.timeline.map((item) => (
+                  <div className="timeline-item" key={item.title}>
+                    <div className={`timeline-dot status-${item.status}`} />
+                    <div>
+                      <h3>{item.title}</h3>
+                      <p>{item.detail}</p>
+                    </div>
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
+            </div>
+          ) : null}
         </section>
 
         <section className="panel">
@@ -246,14 +289,28 @@ function App() {
               <span className="section-kicker">Why this matters</span>
               <h2>Project value</h2>
             </div>
+            <button
+              type="button"
+              className="section-toggle"
+              onClick={() => setShowProjectValue((current) => !current)}
+            >
+              {showProjectValue ? "Hide" : "View"}
+            </button>
           </div>
 
-          <ul className="story-list">
-            <li>Run artifacts are loaded directly from <code>data/runs/</code>.</li>
-            <li>Each dashboard view is based on the same saved summary JSON used for debugging.</li>
-            <li>This makes the UI portfolio-friendly even before adding a backend API.</li>
-            <li>The next upgrade could be a Python API or live push after each summary run.</li>
-          </ul>
+          <p className="panel-summary">
+            The interface is intentionally product-first, while the engineering story stays available on demand.
+          </p>
+
+          {showProjectValue ? (
+            <div className="details-drawer">
+              <ul className="story-list">
+                <li>Real Gmail runs and saved artifacts already drive the interface.</li>
+                <li>The product view stays clean while technical metadata remains accessible on demand.</li>
+                <li>The next step could be a lightweight API or live refresh after each summary run.</li>
+              </ul>
+            </div>
+          ) : null}
         </section>
       </main>
     </div>
