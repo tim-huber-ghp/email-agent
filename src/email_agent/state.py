@@ -41,4 +41,9 @@ class AgentState(TypedDict, total=False):
     uncertain_assessment_count: int
     abstained_assessment_count: int
     llm_fallback_count: int
+    run_started_at: str
+    run_completed_at: str
+    workflow_started_at_monotonic: float
+    workflow_duration_ms: int
+    step_durations_ms: dict[str, int]
     run_metadata: RunMetadata

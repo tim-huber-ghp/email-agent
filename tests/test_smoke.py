@@ -36,6 +36,11 @@ def test_workflow_returns_state() -> None:
     assert result["deadlines"]
     assert result["meetings"]
     assert result["subscriptions"]
+    assert result["run_metadata"].run_started_at
+    assert result["run_metadata"].run_completed_at
+    assert result["run_metadata"].workflow_duration_ms >= 0
+    assert "load_emails" in result["run_metadata"].step_durations_ms
+    assert "generate_summary_with_heuristics" in result["run_metadata"].step_durations_ms
 
 
 def test_llm_guardrails_fallback_to_heuristics_for_low_confidence() -> None:
@@ -59,7 +64,9 @@ def test_llm_guardrails_fallback_to_heuristics_for_low_confidence() -> None:
             "subject": "Urgent: Please reply with the final budget today",
             "received_at": "2026-05-10T08:15:00",
             "snippet": "Need your confirmation before 4pm today.",
-            "body_preview": "Please reply with the updated budget numbers before the deadline today.",
+            "body_preview": (
+                "Please reply with the updated budget numbers before the deadline today."
+            ),
             "labels": ["work", "inbox"],
         }
     )
@@ -91,17 +98,39 @@ def test_routing_functions_cover_key_branches() -> None:
     assert route_after_normalization({"has_emails": True}) == "filter_emails"
 
     assert route_after_filtering({"has_filtered_emails": False}) == "quiet_summary"
-    assert route_after_filtering({"has_filtered_emails": True, "llm_classification_enabled_for_run": False}) == "classify_with_heuristics"
-    assert route_after_filtering({"has_filtered_emails": True, "llm_classification_enabled_for_run": True}) == "classify_with_llm"
+    assert (
+        route_after_filtering(
+            {"has_filtered_emails": True, "llm_classification_enabled_for_run": False}
+        )
+        == "classify_with_heuristics"
+    )
+    assert (
+        route_after_filtering(
+            {"has_filtered_emails": True, "llm_classification_enabled_for_run": True}
+        )
+        == "classify_with_llm"
+    )
 
     assert route_after_llm_classification({"classification_mode": "llm"}) == "extract_action_items"
-    assert route_after_llm_classification({"classification_mode": "llm_guardrailed"}) == "extract_action_items"
-    assert route_after_llm_classification({"classification_mode": "llm_failed"}) == "classify_with_heuristics"
+    assert (
+        route_after_llm_classification({"classification_mode": "llm_guardrailed"})
+        == "extract_action_items"
+    )
+    assert (
+        route_after_llm_classification({"classification_mode": "llm_failed"})
+        == "classify_with_heuristics"
+    )
 
     assert route_after_action_items({}) == "extract_deadlines"
 
-    assert route_after_structured_extraction({"llm_summary_enabled_for_run": True}) == "summary_with_llm"
-    assert route_after_structured_extraction({"llm_summary_enabled_for_run": False}) == "summary_with_heuristics"
+    assert (
+        route_after_structured_extraction({"llm_summary_enabled_for_run": True})
+        == "summary_with_llm"
+    )
+    assert (
+        route_after_structured_extraction({"llm_summary_enabled_for_run": False})
+        == "summary_with_heuristics"
+    )
 
     assert route_after_llm_summary({"summary_mode": "llm"}) == "save_run"
     assert route_after_llm_summary({"summary_mode": "llm_failed"}) == "summary_with_heuristics"

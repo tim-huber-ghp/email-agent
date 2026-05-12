@@ -7,6 +7,8 @@ class RunMetadata(BaseModel):
     """Saved metadata describing how a run was produced."""
 
     run_date: str
+    run_started_at: str = ""
+    run_completed_at: str = ""
     provider: str
     language: str
     llm_enabled: bool
@@ -15,6 +17,8 @@ class RunMetadata(BaseModel):
     llm_summary_enabled: bool
     classification_mode: str
     summary_mode: str
+    workflow_duration_ms: int = Field(default=0, ge=0)
+    step_durations_ms: dict[str, int] = Field(default_factory=dict)
     email_count: int = Field(default=0, ge=0)
     filtered_email_count: int = Field(default=0, ge=0)
     important_email_count: int = Field(default=0, ge=0)

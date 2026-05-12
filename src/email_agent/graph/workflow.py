@@ -3,7 +3,8 @@
 from __future__ import annotations
 
 from collections import Counter
-from datetime import date
+from datetime import UTC, date, datetime
+from time import perf_counter
 
 from langgraph.graph import END, START, StateGraph
 
@@ -13,7 +14,11 @@ from email_agent.models.run_metadata import RunMetadata
 from email_agent.models.summary import ActionItem, DailySummary
 from email_agent.providers.gmail import GmailProvider
 from email_agent.providers.mock import MockEmailProvider
-from email_agent.services.extraction import extract_deadlines, extract_meetings, extract_subscriptions
+from email_agent.services.extraction import (
+    extract_deadlines,
+    extract_meetings,
+    extract_subscriptions,
+)
 from email_agent.services.importance import assess_email, filter_low_value_emails
 from email_agent.services.llm import (
     classify_emails_with_llm,
@@ -108,7 +113,9 @@ def classify_emails_with_llm_node(state: AgentState, settings: Settings) -> Agen
                 else ""
             ),
             "uncertain_assessment_count": sum(
-                1 for item in llm_assessments if item.confidence_score < settings.llm_confidence_threshold
+                1
+                for item in llm_assessments
+                if item.confidence_score < settings.llm_confidence_threshold
             ),
             "abstained_assessment_count": sum(1 for item in llm_assessments if item.abstained),
             "llm_fallback_count": replaced_count,
@@ -136,7 +143,9 @@ def classify_emails_with_heuristics_node(state: AgentState) -> AgentState:
     return {
         **state,
         "assessments": assessments,
-        "classification_mode": "heuristic_fallback" if previous_mode == "llm_failed" else "heuristic",
+        "classification_mode": "heuristic_fallback"
+        if previous_mode == "llm_failed"
+        else "heuristic",
         "classification_error": previous_error,
         "uncertain_assessment_count": state.get("uncertain_assessment_count", 0),
         "abstained_assessment_count": state.get("abstained_assessment_count", 0),
@@ -282,7 +291,9 @@ def generate_summary_with_heuristics_node(state: AgentState, settings: Settings)
             headline = "Your day in emails."
     else:
         if settings.language == "de":
-            overview = "Dein Posteingang war heute ruhig. Es wurden keine wichtigen E-Mails erkannt."
+            overview = (
+                "Dein Posteingang war heute ruhig. Es wurden keine wichtigen E-Mails erkannt."
+            )
             headline = "Heute war dein Posteingang ruhig."
         else:
             overview = "Your inbox was quiet today. No important emails were detected."
@@ -302,7 +313,7 @@ def generate_summary_with_heuristics_node(state: AgentState, settings: Settings)
     return {
         **state,
         "summary": summary,
-        "summary_mode": "heuristic_fallback" if previous_mode == "llm_failed" else "heuristic",
+        "summary_mode": ("heuristic_fallback" if previous_mode == "llm_failed" else "heuristic"),
         "summary_error": previous_error,
     }
 
@@ -343,8 +354,14 @@ def generate_quiet_summary(state: AgentState, settings: Settings) -> AgentState:
 def save_run(state: AgentState, settings: Settings) -> AgentState:
     """Persist the run output for inspection and future UI work."""
 
+    completed_at = _utc_now_iso()
+    workflow_duration_ms = _compute_workflow_duration_ms(state)
+    step_durations_ms = dict(state.get("step_durations_ms", {}))
+
     run_metadata = RunMetadata(
         run_date=state["run_date"],
+        run_started_at=state.get("run_started_at", ""),
+        run_completed_at=completed_at,
         provider=state.get("provider", "unknown"),
         language=settings.language,
         llm_enabled=state.get("llm_enabled_for_run", False),
@@ -353,9 +370,13 @@ def save_run(state: AgentState, settings: Settings) -> AgentState:
         llm_summary_enabled=state.get("llm_summary_enabled_for_run", False),
         classification_mode=state.get("classification_mode", "unknown"),
         summary_mode=state.get("summary_mode", "unknown"),
+        workflow_duration_ms=workflow_duration_ms,
+        step_durations_ms=step_durations_ms,
         email_count=len(state.get("emails", [])),
         filtered_email_count=len(state.get("filtered_emails", [])),
-        important_email_count=len(state.get("summary", DailySummary(overview="", headline="")).important_email_ids),
+        important_email_count=len(
+            state.get("summary", DailySummary(overview="", headline="")).important_email_ids
+        ),
         uncertain_assessment_count=state.get("uncertain_assessment_count", 0),
         abstained_assessment_count=state.get("abstained_assessment_count", 0),
         llm_fallback_count=state.get("llm_fallback_count", 0),
@@ -374,6 +395,8 @@ def save_run(state: AgentState, settings: Settings) -> AgentState:
     )
     return {
         **state,
+        "run_completed_at": completed_at,
+        "workflow_duration_ms": workflow_duration_ms,
         "persisted_run_dir": str(run_dir),
         "run_metadata": run_metadata,
     }
@@ -383,27 +406,59 @@ def build_workflow(settings: Settings):
     """Compile the LangGraph workflow for the MVP."""
 
     graph = StateGraph(AgentState)
-    graph.add_node("load_emails", lambda state: load_emails(state, settings))
-    graph.add_node("normalize_emails", normalize_emails)
-    graph.add_node("filter_emails", filter_emails)
+    graph.add_node(
+        "load_emails",
+        _timed_node("load_emails", lambda state: load_emails(state, settings)),
+    )
+    graph.add_node("normalize_emails", _timed_node("normalize_emails", normalize_emails))
+    graph.add_node("filter_emails", _timed_node("filter_emails", filter_emails))
     graph.add_node(
         "classify_emails_with_llm",
-        lambda state: classify_emails_with_llm_node(state, settings),
+        _timed_node(
+            "classify_emails_with_llm",
+            lambda state: classify_emails_with_llm_node(state, settings),
+        ),
     )
-    graph.add_node("classify_emails_with_heuristics", classify_emails_with_heuristics_node)
-    graph.add_node("extract_action_items", lambda state: extract_action_items(state, settings))
-    graph.add_node("extract_deadlines", lambda state: extract_deadlines_node(state, settings))
-    graph.add_node("extract_meetings", extract_meetings_node)
-    graph.add_node("extract_subscriptions", extract_subscriptions_node)
+    graph.add_node(
+        "classify_emails_with_heuristics",
+        _timed_node("classify_emails_with_heuristics", classify_emails_with_heuristics_node),
+    )
+    graph.add_node(
+        "extract_action_items",
+        _timed_node("extract_action_items", lambda state: extract_action_items(state, settings)),
+    )
+    graph.add_node(
+        "extract_deadlines",
+        _timed_node("extract_deadlines", lambda state: extract_deadlines_node(state, settings)),
+    )
+    graph.add_node(
+        "extract_meetings",
+        _timed_node("extract_meetings", extract_meetings_node),
+    )
+    graph.add_node(
+        "extract_subscriptions",
+        _timed_node("extract_subscriptions", extract_subscriptions_node),
+    )
     graph.add_node(
         "generate_summary_with_llm",
-        lambda state: generate_summary_with_llm_node(state, settings),
+        _timed_node(
+            "generate_summary_with_llm",
+            lambda state: generate_summary_with_llm_node(state, settings),
+        ),
     )
     graph.add_node(
         "generate_summary_with_heuristics",
-        lambda state: generate_summary_with_heuristics_node(state, settings),
+        _timed_node(
+            "generate_summary_with_heuristics",
+            lambda state: generate_summary_with_heuristics_node(state, settings),
+        ),
     )
-    graph.add_node("generate_quiet_summary", lambda state: generate_quiet_summary(state, settings))
+    graph.add_node(
+        "generate_quiet_summary",
+        _timed_node(
+            "generate_quiet_summary", lambda state: generate_quiet_summary(state, settings)
+        ),
+    )
     graph.add_node("save_run", lambda state: save_run(state, settings))
 
     graph.add_edge(START, "load_emails")
@@ -470,6 +525,7 @@ def run_workflow(initial_state: AgentState, settings: Settings) -> AgentState:
     """Run the compiled LangGraph workflow."""
 
     app = build_workflow(settings)
+    started_at_monotonic = perf_counter()
     return app.invoke(
         {
             **initial_state,
@@ -477,6 +533,9 @@ def run_workflow(initial_state: AgentState, settings: Settings) -> AgentState:
             "llm_enabled_for_run": llm_is_available(settings),
             "llm_classification_enabled_for_run": llm_classification_enabled(settings),
             "llm_summary_enabled_for_run": llm_summary_enabled(settings),
+            "run_started_at": _utc_now_iso(),
+            "workflow_started_at_monotonic": started_at_monotonic,
+            "step_durations_ms": {},
         }
     )
 
@@ -523,9 +582,11 @@ def _apply_llm_guardrails(
                     update={
                         "reason": (
                             f"{fallback.reason} "
-                            f"[Fallback from low-confidence LLM classification: {assessment.reason}]"
+                            "[Fallback from low-confidence LLM classification: "
+                            f"{assessment.reason}]"
                         ).strip(),
-                        "uncertainty_note": assessment.uncertainty_note or "Low-confidence LLM classification.",
+                        "uncertainty_note": assessment.uncertainty_note
+                        or "Low-confidence LLM classification.",
                     }
                 )
             )
@@ -534,6 +595,36 @@ def _apply_llm_guardrails(
             guarded.append(assessment)
 
     return guarded, replaced_count
+
+
+def _timed_node(name: str, handler):
+    """Wrap a workflow node and record its duration in milliseconds."""
+
+    def wrapped(state: AgentState) -> AgentState:
+        started_at = perf_counter()
+        next_state = handler(state)
+        elapsed_ms = max(0, int(round((perf_counter() - started_at) * 1000)))
+        step_durations = dict(
+            next_state.get("step_durations_ms", state.get("step_durations_ms", {}))
+        )
+        step_durations[name] = elapsed_ms
+        return {
+            **next_state,
+            "step_durations_ms": step_durations,
+        }
+
+    return wrapped
+
+
+def _utc_now_iso() -> str:
+    return datetime.now(UTC).isoformat().replace("+00:00", "Z")
+
+
+def _compute_workflow_duration_ms(state: AgentState) -> int:
+    started_at = state.get("workflow_started_at_monotonic")
+    if started_at is None:
+        return 0
+    return max(0, int(round((perf_counter() - started_at) * 1000)))
 
 
 def _should_fallback_assessment(assessment: EmailAssessment, settings: Settings) -> bool:
@@ -553,7 +644,11 @@ def route_after_action_items(state: AgentState) -> str:
 
 
 def route_after_structured_extraction(state: AgentState) -> str:
-    return "summary_with_llm" if state.get("llm_summary_enabled_for_run") else "summary_with_heuristics"
+    return (
+        "summary_with_llm"
+        if state.get("llm_summary_enabled_for_run")
+        else "summary_with_heuristics"
+    )
 
 
 def route_after_llm_summary(state: AgentState) -> str:

@@ -178,6 +178,8 @@ function buildFallbackRunMetadata({ date, summary, assessments, emails }) {
 
   return {
     run_date: date,
+    run_started_at: "",
+    run_completed_at: "",
     provider,
     language: summary.language ?? "en",
     llm_enabled: false,
@@ -186,6 +188,8 @@ function buildFallbackRunMetadata({ date, summary, assessments, emails }) {
     llm_summary_enabled: false,
     classification_mode: "unknown",
     summary_mode: "unknown",
+    workflow_duration_ms: 0,
+    step_durations_ms: {},
     email_count: Array.isArray(emails) ? emails.length : 0,
     filtered_email_count: Array.isArray(assessments) ? assessments.length : 0,
     important_email_count: importantEmailCount,

@@ -23,6 +23,9 @@ const UI_TEXT = {
     language: "Language",
     llm: "LLM",
     execution: "Execution",
+    startedAt: "Started",
+    completedAt: "Completed",
+    workflowDuration: "Workflow duration",
     emailCount: "Email count",
     importantCount: "Important count",
     llmClassification: "LLM classification",
@@ -51,6 +54,8 @@ const UI_TEXT = {
     hide: "Hide",
     view: "View",
     workflowSummary: "A compact system overview is available when you want to inspect the workflow path.",
+    stepTimingSummary: "Each saved run now includes timestamps and step durations for a clearer operational trace.",
+    stepCompletedInDetail: (duration) => `Completed in ${duration}.`,
     whyThisMatters: "Why this matters",
     projectValue: "Project value",
     projectSummary: "The interface is intentionally product-first, while the engineering story stays available on demand.",
@@ -114,6 +119,9 @@ const UI_TEXT = {
     language: "Sprache",
     llm: "LLM",
     execution: "Ausführung",
+    startedAt: "Gestartet",
+    completedAt: "Beendet",
+    workflowDuration: "Workflow-Dauer",
     emailCount: "E-Mail-Anzahl",
     importantCount: "Wichtige E-Mails",
     llmClassification: "LLM-Klassifizierung",
@@ -142,6 +150,8 @@ const UI_TEXT = {
     hide: "Ausblenden",
     view: "Anzeigen",
     workflowSummary: "Eine kompakte Systemansicht ist verfügbar, wenn du den Ablauf genauer ansehen willst.",
+    stepTimingSummary: "Jeder gespeicherte Lauf enthält jetzt Zeitstempel und Schrittdauern für eine klarere operative Spur.",
+    stepCompletedInDetail: (duration) => `Abgeschlossen in ${duration}.`,
     whyThisMatters: "Warum das wichtig ist",
     projectValue: "Projektwert",
     projectSummary: "Die Oberfläche bleibt bewusst produktnah, während die technische Sicht bei Bedarf verfügbar ist.",
@@ -580,6 +590,18 @@ function App() {
                       <dd>{dashboardData.executionMode}</dd>
                     </div>
                     <div>
+                      <dt>{ui.startedAt}</dt>
+                      <dd>{dashboardData.metadata.runStartedAt}</dd>
+                    </div>
+                    <div>
+                      <dt>{ui.completedAt}</dt>
+                      <dd>{dashboardData.metadata.runCompletedAt}</dd>
+                    </div>
+                    <div>
+                      <dt>{ui.workflowDuration}</dt>
+                      <dd>{dashboardData.metadata.workflowDuration}</dd>
+                    </div>
+                    <div>
                       <dt>{ui.emailCount}</dt>
                       <dd>{dashboardData.metadata.emailCount}</dd>
                     </div>
@@ -621,6 +643,7 @@ function App() {
                 {activeSheet === "workflow" ? (
                   <div className="sheet-stack">
                     <p className="sheet-summary">{ui.workflowSummary}</p>
+                    <p className="sheet-summary">{ui.stepTimingSummary}</p>
                     <div className="timeline">
                       {dashboardData.timeline.map((item) => (
                         <div className="timeline-item" key={item.title}>
@@ -741,37 +764,19 @@ function buildDashboardData(runData) {
       tag: formatLabel(assessmentMap.get(email.id)?.label ?? "info"),
       summary: email.snippet || email.body_preview || ui.noPreview,
     })),
-    timeline: [
-      {
-        title: ui.savedSummary,
-        detail: ui.savedSummaryDetail(date, summary.important_email_ids.length),
-        status: "completed",
-      },
-      {
-        title: ui.structuredExtraction,
-        detail: ui.structuredExtractionDetail(deadlines.length, meetings.length, subscriptions.length),
-        status: "completed",
-      },
-      {
-        title: ui.artifactBackedUi,
-        detail: ui.artifactBackedUiDetail,
-        status: "completed",
-      },
-      {
-        title: ui.guardrails,
-        detail: ui.guardrailsDetail(
-          runMetadata?.llm_fallback_count ?? 0,
-          runMetadata?.abstained_assessment_count ?? 0,
-        ),
-        status: "completed",
-      },
-      {
-        title: ui.nextStep,
-        detail: ui.nextStepDetail,
-        status: "next",
-      },
-    ],
+    timeline: buildTimeline({
+      ui,
+      date,
+      summary,
+      deadlines,
+      meetings,
+      subscriptions,
+      runMetadata,
+    }),
     metadata: {
+      runStartedAt: formatTimestamp(runMetadata?.run_started_at, locale, ui),
+      runCompletedAt: formatTimestamp(runMetadata?.run_completed_at, locale, ui),
+      workflowDuration: formatDuration(runMetadata?.workflow_duration_ms),
       emailCount: runMetadata?.email_count ?? emails.length,
       importantEmailCount: runMetadata?.important_email_count ?? summary.important_email_ids.length,
       llmClassificationEnabled: yesNo(runMetadata?.llm_classification_enabled, ui),
@@ -785,10 +790,54 @@ function buildDashboardData(runData) {
     previewMeta: [
       { label: ui.provider, value: provider.toUpperCase() },
       { label: ui.language, value: language },
+      { label: ui.workflowDuration, value: formatDuration(runMetadata?.workflow_duration_ms) },
       { label: ui.emailCount, value: String(runMetadata?.email_count ?? emails.length) },
-      { label: ui.importantCount, value: String(runMetadata?.important_email_count ?? summary.important_email_ids.length) },
+      {
+        label: ui.importantCount,
+        value: String(runMetadata?.important_email_count ?? summary.important_email_ids.length),
+      },
     ],
   };
+}
+
+function buildTimeline({ ui, date, summary, deadlines, meetings, subscriptions, runMetadata }) {
+  const timedSteps = Object.entries(runMetadata?.step_durations_ms ?? {}).map(([step, durationMs]) => ({
+    title: humanizeStepName(step),
+    detail: ui.stepCompletedInDetail(formatDuration(durationMs)),
+    status: "completed",
+  }));
+
+  return [
+    {
+      title: ui.savedSummary,
+      detail: ui.savedSummaryDetail(date, summary.important_email_ids.length),
+      status: "completed",
+    },
+    {
+      title: ui.structuredExtraction,
+      detail: ui.structuredExtractionDetail(deadlines.length, meetings.length, subscriptions.length),
+      status: "completed",
+    },
+    {
+      title: ui.artifactBackedUi,
+      detail: ui.artifactBackedUiDetail,
+      status: "completed",
+    },
+    ...timedSteps,
+    {
+      title: ui.guardrails,
+      detail: ui.guardrailsDetail(
+        runMetadata?.llm_fallback_count ?? 0,
+        runMetadata?.abstained_assessment_count ?? 0,
+      ),
+      status: "completed",
+    },
+    {
+      title: ui.nextStep,
+      detail: ui.nextStepDetail,
+      status: "next",
+    },
+  ];
 }
 
 function formatDate(date, locale) {
@@ -799,6 +848,42 @@ function formatDate(date, locale) {
     month: "long",
     day: "numeric",
   }).format(parsed);
+}
+
+function formatTimestamp(value, locale, ui) {
+  if (!value) {
+    return ui.unknown;
+  }
+
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) {
+    return value;
+  }
+
+  const formatterLocale = locale === "de" ? "de-DE" : "en-US";
+  return new Intl.DateTimeFormat(formatterLocale, {
+    month: "short",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+  }).format(parsed);
+}
+
+function formatDuration(value) {
+  if (typeof value !== "number" || Number.isNaN(value) || value < 0) {
+    return "0 ms";
+  }
+  if (value < 1000) {
+    return `${value} ms`;
+  }
+  return `${(value / 1000).toFixed(2)} s`;
+}
+
+function humanizeStepName(step) {
+  return step
+    .replace(/_/g, " ")
+    .replace(/\b\w/g, (char) => char.toUpperCase());
 }
 
 function formatLabel(label) {
