@@ -35,9 +35,7 @@ def test_run_heuristic_evaluation_on_adversarial_dataset_is_not_perfect() -> Non
     report = run_heuristic_evaluation(Path("data/eval/labeled_emails_adversarial.json"))
 
     assert report.total_examples >= 10
-    assert (
-        report.label_accuracy < 1
-        or report.meeting_extraction.precision < 1
-        or report.subscription_extraction.precision < 1
-        or report.deadline_extraction.precision < 1
-    )
+    assert report.label_accuracy == 1
+    assert report.meeting_extraction.precision == 1
+    assert report.subscription_extraction.precision == 1
+    assert report.deadline_extraction.precision == 1

@@ -146,3 +146,26 @@ def test_extract_subscriptions_skips_one_time_payments() -> None:
     subscriptions = extract_subscriptions([email], assessments)
 
     assert subscriptions == []
+
+
+def test_extract_subscriptions_skips_cancelled_subscriptions() -> None:
+    email = _email(
+        email_id="msg-3c",
+        subject="Your subscription has been cancelled",
+        snippet="Your plan will not renew.",
+        body_preview="Cancellation confirmed. No further billing is scheduled.",
+        labels=["finance"],
+    )
+    assessments = [
+        EmailAssessment(
+            email_id="msg-3c",
+            label="finance",
+            importance_score=70,
+            reason="Contains completed billing or cancellation information.",
+            needs_action=False,
+        )
+    ]
+
+    subscriptions = extract_subscriptions([email], assessments)
+
+    assert subscriptions == []

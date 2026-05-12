@@ -57,3 +57,59 @@ def test_subscription_renewal_is_classified_as_finance() -> None:
 
     assert assessment.label == "finance"
     assert assessment.importance_score >= 50
+
+
+def test_promotional_discount_email_does_not_become_finance() -> None:
+    email = _email(
+        "Important: your premium discount ends today",
+        "Today only. Renew your premium membership discount now.",
+        "Marketing reminder for a discount offer. Unsubscribe any time.",
+        ["promotions"],
+    )
+
+    assessment = assess_email(email)
+
+    assert assessment.label == "low_priority"
+    assert assessment.importance_score < 50
+
+
+def test_soft_deadline_from_manager_is_still_urgent() -> None:
+    email = _email(
+        "Not urgent, but please send the latest draft by Friday",
+        "No rush today, but I need the file by Friday afternoon.",
+        "This is not urgent right now, though the Friday deadline matters.",
+        ["work"],
+    )
+
+    assessment = assess_email(email)
+
+    assert assessment.label == "urgent"
+    assert assessment.importance_score >= 50
+
+
+def test_policy_review_email_stays_info() -> None:
+    email = _email(
+        "Please review the new remote policy when convenient",
+        "No response required unless you have questions.",
+        "This is informational and can be read later.",
+        ["work"],
+    )
+
+    assessment = assess_email(email)
+
+    assert assessment.label == "info"
+    assert assessment.importance_score < 50
+
+
+def test_cancelled_subscription_is_finance_without_action() -> None:
+    email = _email(
+        "Your subscription has been cancelled",
+        "Your plan will not renew.",
+        "Cancellation confirmed. No further billing is scheduled.",
+        ["finance"],
+    )
+
+    assessment = assess_email(email)
+
+    assert assessment.label == "finance"
+    assert assessment.needs_action is False

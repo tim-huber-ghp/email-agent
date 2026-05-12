@@ -33,6 +33,10 @@ NEGATED_SUBSCRIPTION_HINTS = (
     "no recurring",
     "no subscription applies",
     "not a subscription",
+    "will not renew",
+    "no further billing",
+    "cancellation confirmed",
+    "has been cancelled",
 )
 
 

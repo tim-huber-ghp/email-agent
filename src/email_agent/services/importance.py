@@ -10,6 +10,7 @@ LOW_PRIORITY_KEYWORDS = {
     "marketing",
     "unsubscribe",
 }
+INFO_KEYWORDS = {"policy", "review", "notes", "summary", "informational", "read later"}
 
 URGENT_KEYWORDS = {"urgent", "asap", "today", "immediately", "deadline"}
 DAY_DEADLINE_HINTS = {"monday", "tuesday", "wednesday", "thursday", "friday"}
@@ -27,6 +28,7 @@ FINANCE_KEYWORDS = {
     "renewal",
     "plan",
 }
+FINANCE_STRONG_KEYWORDS = {"invoice", "payment", "receipt", "billing", "refund", "subscription", "charge"}
 LOW_PRIORITY_HINTS = {
     "no rush",
     "optional",
@@ -67,7 +69,9 @@ def assess_email(email: NormalizedEmail) -> EmailAssessment:
     haystack = _email_text(email)
     low_priority_signal = any(keyword in haystack for keyword in LOW_PRIORITY_KEYWORDS)
     low_priority_hint = any(keyword in haystack for keyword in LOW_PRIORITY_HINTS)
+    info_signal = any(keyword in haystack for keyword in INFO_KEYWORDS)
     finance_signal = any(keyword in haystack for keyword in FINANCE_KEYWORDS)
+    finance_strong_signal = any(keyword in haystack for keyword in FINANCE_STRONG_KEYWORDS)
     urgent_signal = any(keyword in haystack for keyword in URGENT_KEYWORDS)
     deadline_day_signal = any(
         phrase in haystack
@@ -79,24 +83,43 @@ def assess_email(email: NormalizedEmail) -> EmailAssessment:
     )
     meeting_signal = any(keyword in haystack for keyword in MEETING_KEYWORDS)
     reply_signal = any(keyword in haystack for keyword in REPLY_KEYWORDS)
+    cancellation_complete_signal = any(
+        phrase in haystack
+        for phrase in {
+            "has been cancelled",
+            "cancellation confirmed",
+            "will not renew",
+            "no further billing",
+        }
+    )
+    promotions_label = "promotions" in haystack
+    optional_reply_signal = "no response required" in haystack or "no response is needed" in haystack
 
     score = 20
     label = "info"
     reason = "General informational email."
     needs_action = False
 
-    if low_priority_signal and not finance_signal and "important" not in haystack:
+    if (low_priority_signal or promotions_label) and not finance_strong_signal:
         score = 20
         label = "low_priority"
         reason = "Looks like promotional or low-value content."
+    elif finance_signal and cancellation_complete_signal:
+        score = 70
+        label = "finance"
+        reason = "Contains completed billing or cancellation information."
+        needs_action = False
     elif finance_signal and ("subscription" in haystack or "renew" in haystack or "billing" in haystack):
         score = 85
         label = "finance"
         reason = "Contains subscription or billing-related keywords."
         needs_action = True
-    elif (
-        (urgent_signal and "not urgent" not in haystack) or deadline_day_signal
-    ) and not low_priority_hint:
+    elif deadline_day_signal and ("send" in haystack or "need" in haystack or "deadline" in haystack):
+        score = 90
+        label = "urgent"
+        reason = "Contains a concrete deadline that still requires follow-up."
+        needs_action = True
+    elif (urgent_signal and "not urgent" not in haystack) and not low_priority_hint:
         score = 90
         label = "urgent"
         reason = "Contains urgent language or a time-sensitive deadline."
@@ -116,10 +139,10 @@ def assess_email(email: NormalizedEmail) -> EmailAssessment:
         label = "needs_reply"
         reason = "Likely expects a response."
         needs_action = True
-    elif "fyi" in haystack or "update" in haystack:
-        score = 45
+    elif optional_reply_signal or info_signal or "fyi" in haystack or "update" in haystack:
+        score = 40
         label = "info"
-        reason = "Useful informational update."
+        reason = "Looks like an informational message without urgent follow-up."
     elif low_priority_hint:
         score = 30
         label = "info"
