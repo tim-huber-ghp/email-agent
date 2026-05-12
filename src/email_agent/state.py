@@ -46,4 +46,9 @@ class AgentState(TypedDict, total=False):
     workflow_started_at_monotonic: float
     workflow_duration_ms: int
     step_durations_ms: dict[str, int]
+    llm_input_tokens: int
+    llm_output_tokens: int
+    llm_total_tokens: int
+    estimated_cost_eur: float
+    llm_usage_by_operation: dict[str, dict[str, int]]
     run_metadata: RunMetadata

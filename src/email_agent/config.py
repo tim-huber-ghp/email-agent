@@ -28,6 +28,14 @@ class Settings(BaseSettings):
     llm_max_emails: int = Field(default=6, alias="EMAIL_AGENT_LLM_MAX_EMAILS")
     llm_max_snippet_chars: int = Field(default=120, alias="EMAIL_AGENT_LLM_MAX_SNIPPET_CHARS")
     llm_max_body_chars: int = Field(default=180, alias="EMAIL_AGENT_LLM_MAX_BODY_CHARS")
+    llm_input_cost_per_1k_tokens: float = Field(
+        default=0.0,
+        alias="EMAIL_AGENT_LLM_INPUT_COST_PER_1K_TOKENS",
+    )
+    llm_output_cost_per_1k_tokens: float = Field(
+        default=0.0,
+        alias="EMAIL_AGENT_LLM_OUTPUT_COST_PER_1K_TOKENS",
+    )
     openai_api_key: str | None = Field(default=None, alias="OPENAI_API_KEY")
     google_api_key: str | None = Field(default=None, alias="GOOGLE_API_KEY")
     gmail_credentials_file: Path = Field(
@@ -42,6 +50,7 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",
+        env_ignore_empty=True,
         case_sensitive=False,
         populate_by_name=True,
     )

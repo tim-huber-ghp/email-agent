@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from collections.abc import Mapping
+
 from pydantic import BaseModel, Field
 
 from email_agent.config import Settings
@@ -31,6 +33,21 @@ class SummaryNarrative(BaseModel):
 
     headline: str
     overview: str
+
+
+class LLMUsage(BaseModel):
+    """Normalized token usage captured from a model response."""
+
+    input_tokens: int = 0
+    output_tokens: int = 0
+    total_tokens: int = 0
+
+    def plus(self, other: LLMUsage) -> LLMUsage:
+        return LLMUsage(
+            input_tokens=self.input_tokens + other.input_tokens,
+            output_tokens=self.output_tokens + other.output_tokens,
+            total_tokens=self.total_tokens + other.total_tokens,
+        )
 
 
 def llm_is_available(settings: Settings) -> bool:
@@ -63,22 +80,25 @@ def llm_summary_enabled(settings: Settings) -> bool:
 def classify_emails_with_llm(
     emails: list[NormalizedEmail],
     settings: Settings,
-) -> list[EmailAssessment]:
+) -> tuple[list[EmailAssessment], LLMUsage]:
     """Classify emails with structured model output."""
 
     all_assessments: list[EmailAssessment] = []
+    cumulative_usage = LLMUsage()
 
     for start in range(0, len(emails), settings.llm_max_emails):
         batch = emails[start : start + settings.llm_max_emails]
         prepared_batch = _prepare_emails_for_llm(batch, settings)
-        assessments = _classify_email_batch_with_llm(prepared_batch, settings)
+        assessments, usage = _classify_email_batch_with_llm(prepared_batch, settings)
         if len(assessments) != len(batch):
             raise ValueError(
-                f"Classification batch returned {len(assessments)} assessments for {len(batch)} emails."
+                "Classification batch returned "
+                f"{len(assessments)} assessments for {len(batch)} emails."
             )
         all_assessments.extend(assessments)
+        cumulative_usage = cumulative_usage.plus(usage)
 
-    return all_assessments
+    return all_assessments, cumulative_usage
 
 
 def generate_summary_with_llm(
@@ -86,13 +106,17 @@ def generate_summary_with_llm(
     assessments: list[EmailAssessment],
     action_items: list[ActionItem],
     settings: Settings,
-) -> SummaryNarrative:
+) -> tuple[SummaryNarrative, LLMUsage]:
     """Generate the final summary narrative with the model."""
 
     important_emails = _prepare_emails_for_llm(important_emails, settings)
     important_email_ids = {email.id for email in important_emails}
-    assessments = [assessment for assessment in assessments if assessment.email_id in important_email_ids]
-    action_items = [item for item in action_items if item.source_email_id in important_email_ids][:4]
+    assessments = [
+        assessment for assessment in assessments if assessment.email_id in important_email_ids
+    ]
+    action_items = [item for item in action_items if item.source_email_id in important_email_ids][
+        :4
+    ]
 
     if settings.llm_provider == "gemini":
         return _generate_summary_with_gemini(
@@ -111,13 +135,13 @@ def generate_summary_with_llm(
     parsed = response.output_parsed
     if parsed is None:
         raise ValueError("The model did not return a structured summary payload.")
-    return parsed
+    return parsed, _extract_openai_usage(response)
 
 
 def _classify_emails_with_gemini(
     emails: list[NormalizedEmail],
     settings: Settings,
-) -> list[EmailAssessment]:
+) -> tuple[list[EmailAssessment], LLMUsage]:
     """Classify emails with Gemini via LangChain structured output."""
 
     llm = ChatGoogleGenerativeAI(
@@ -125,15 +149,16 @@ def _classify_emails_with_gemini(
         google_api_key=settings.google_api_key,
         temperature=0,
     )
-    structured_llm = llm.with_structured_output(ClassificationBatch)
-    parsed = structured_llm.invoke(classification_messages(emails))
-    return parsed.assessments
+    structured_llm = llm.with_structured_output(ClassificationBatch, include_raw=True)
+    result = structured_llm.invoke(classification_messages(emails))
+    parsed = result["parsed"]
+    return parsed.assessments, _extract_langchain_usage(result.get("raw"))
 
 
 def _classify_email_batch_with_llm(
     emails: list[NormalizedEmail],
     settings: Settings,
-) -> list[EmailAssessment]:
+) -> tuple[list[EmailAssessment], LLMUsage]:
     """Classify a single prepared batch with the configured provider."""
 
     if settings.llm_provider == "gemini":
@@ -148,7 +173,7 @@ def _classify_email_batch_with_llm(
     parsed = response.output_parsed
     if parsed is None:
         raise ValueError("The model did not return a structured classification payload.")
-    return parsed.assessments
+    return parsed.assessments, _extract_openai_usage(response)
 
 
 def _generate_summary_with_gemini(
@@ -156,7 +181,7 @@ def _generate_summary_with_gemini(
     assessments: list[EmailAssessment],
     action_items: list[ActionItem],
     settings: Settings,
-) -> SummaryNarrative:
+) -> tuple[SummaryNarrative, LLMUsage]:
     """Generate the final summary with Gemini via LangChain structured output."""
 
     llm = ChatGoogleGenerativeAI(
@@ -164,8 +189,8 @@ def _generate_summary_with_gemini(
         google_api_key=settings.google_api_key,
         temperature=0,
     )
-    structured_llm = llm.with_structured_output(SummaryNarrative)
-    parsed = structured_llm.invoke(
+    structured_llm = llm.with_structured_output(SummaryNarrative, include_raw=True)
+    result = structured_llm.invoke(
         summary_messages(
             important_emails=important_emails,
             assessments=assessments,
@@ -173,7 +198,46 @@ def _generate_summary_with_gemini(
             language=settings.language,
         )
     )
-    return parsed
+    parsed = result["parsed"]
+    return parsed, _extract_langchain_usage(result.get("raw"))
+
+
+def estimate_cost_eur(usage: LLMUsage, settings: Settings) -> float:
+    """Estimate cost in EUR from configured per-1k token rates."""
+
+    input_cost = (usage.input_tokens / 1000) * settings.llm_input_cost_per_1k_tokens
+    output_cost = (usage.output_tokens / 1000) * settings.llm_output_cost_per_1k_tokens
+    return round(input_cost + output_cost, 6)
+
+
+def usage_to_dict(usage: LLMUsage) -> dict[str, int]:
+    """Return a serializable usage payload."""
+
+    return usage.model_dump()
+
+
+def _extract_openai_usage(response: object) -> LLMUsage:
+    usage = getattr(response, "usage", None)
+    if usage is None:
+        return LLMUsage()
+
+    return LLMUsage(
+        input_tokens=int(getattr(usage, "input_tokens", 0) or 0),
+        output_tokens=int(getattr(usage, "output_tokens", 0) or 0),
+        total_tokens=int(getattr(usage, "total_tokens", 0) or 0),
+    )
+
+
+def _extract_langchain_usage(message: object) -> LLMUsage:
+    usage_metadata = getattr(message, "usage_metadata", None)
+    if not isinstance(usage_metadata, Mapping):
+        return LLMUsage()
+
+    return LLMUsage(
+        input_tokens=int(usage_metadata.get("input_tokens", 0) or 0),
+        output_tokens=int(usage_metadata.get("output_tokens", 0) or 0),
+        total_tokens=int(usage_metadata.get("total_tokens", 0) or 0),
+    )
 
 
 def _prepare_emails_for_llm(

@@ -21,11 +21,14 @@ from email_agent.services.extraction import (
 )
 from email_agent.services.importance import assess_email, filter_low_value_emails
 from email_agent.services.llm import (
+    LLMUsage,
     classify_emails_with_llm,
+    estimate_cost_eur,
     generate_summary_with_llm,
     llm_classification_enabled,
     llm_is_available,
     llm_summary_enabled,
+    usage_to_dict,
 )
 from email_agent.state import AgentState
 from email_agent.storage.json_store import persist_run
@@ -97,10 +100,16 @@ def classify_emails_with_llm_node(state: AgentState, settings: Settings) -> Agen
 
     filtered_emails = state.get("filtered_emails", [])
     try:
-        llm_assessments = classify_emails_with_llm(filtered_emails, settings)
+        llm_assessments, usage = classify_emails_with_llm(filtered_emails, settings)
         assessments, replaced_count = _apply_llm_guardrails(
             emails=filtered_emails,
             llm_assessments=llm_assessments,
+            settings=settings,
+        )
+        next_usage = _merge_usage(
+            state,
+            operation_name="classification",
+            usage=usage,
             settings=settings,
         )
         return {
@@ -119,6 +128,7 @@ def classify_emails_with_llm_node(state: AgentState, settings: Settings) -> Agen
             ),
             "abstained_assessment_count": sum(1 for item in llm_assessments if item.abstained),
             "llm_fallback_count": replaced_count,
+            **next_usage,
         }
     except Exception as exc:
         return {
@@ -235,7 +245,7 @@ def generate_summary_with_llm_node(state: AgentState, settings: Settings) -> Age
         }
 
     try:
-        llm_summary = generate_summary_with_llm(
+        llm_summary, usage = generate_summary_with_llm(
             important_emails=important_emails,
             assessments=important_assessments,
             action_items=state.get("action_items", []),
@@ -250,11 +260,18 @@ def generate_summary_with_llm_node(state: AgentState, settings: Settings) -> Age
             counts_by_label=dict(counts),
             language=settings.language,
         )
+        next_usage = _merge_usage(
+            state,
+            operation_name="summary",
+            usage=usage,
+            settings=settings,
+        )
         return {
             **state,
             "summary": summary,
             "summary_mode": "llm",
             "summary_error": "",
+            **next_usage,
         }
     except Exception as exc:
         return {
@@ -372,6 +389,11 @@ def save_run(state: AgentState, settings: Settings) -> AgentState:
         summary_mode=state.get("summary_mode", "unknown"),
         workflow_duration_ms=workflow_duration_ms,
         step_durations_ms=step_durations_ms,
+        llm_input_tokens=state.get("llm_input_tokens", 0),
+        llm_output_tokens=state.get("llm_output_tokens", 0),
+        llm_total_tokens=state.get("llm_total_tokens", 0),
+        estimated_cost_eur=state.get("estimated_cost_eur", 0.0),
+        llm_usage_by_operation=state.get("llm_usage_by_operation", {}),
         email_count=len(state.get("emails", [])),
         filtered_email_count=len(state.get("filtered_emails", [])),
         important_email_count=len(
@@ -536,6 +558,11 @@ def run_workflow(initial_state: AgentState, settings: Settings) -> AgentState:
             "run_started_at": _utc_now_iso(),
             "workflow_started_at_monotonic": started_at_monotonic,
             "step_durations_ms": {},
+            "llm_input_tokens": 0,
+            "llm_output_tokens": 0,
+            "llm_total_tokens": 0,
+            "estimated_cost_eur": 0.0,
+            "llm_usage_by_operation": {},
         }
     )
 
@@ -625,6 +652,32 @@ def _compute_workflow_duration_ms(state: AgentState) -> int:
     if started_at is None:
         return 0
     return max(0, int(round((perf_counter() - started_at) * 1000)))
+
+
+def _merge_usage(
+    state: AgentState,
+    *,
+    operation_name: str,
+    usage: LLMUsage,
+    settings: Settings,
+) -> dict[str, object]:
+    usage_by_operation = dict(state.get("llm_usage_by_operation", {}))
+    usage_by_operation[operation_name] = usage_to_dict(usage)
+    total_input_tokens = state.get("llm_input_tokens", 0) + usage.input_tokens
+    total_output_tokens = state.get("llm_output_tokens", 0) + usage.output_tokens
+    total_tokens = state.get("llm_total_tokens", 0) + usage.total_tokens
+    total_usage = LLMUsage(
+        input_tokens=total_input_tokens,
+        output_tokens=total_output_tokens,
+        total_tokens=total_tokens,
+    )
+    return {
+        "llm_input_tokens": total_input_tokens,
+        "llm_output_tokens": total_output_tokens,
+        "llm_total_tokens": total_tokens,
+        "estimated_cost_eur": estimate_cost_eur(total_usage, settings),
+        "llm_usage_by_operation": usage_by_operation,
+    }
 
 
 def _should_fallback_assessment(assessment: EmailAssessment, settings: Settings) -> bool:

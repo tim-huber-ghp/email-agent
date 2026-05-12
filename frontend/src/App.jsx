@@ -26,6 +26,10 @@ const UI_TEXT = {
     startedAt: "Started",
     completedAt: "Completed",
     workflowDuration: "Workflow duration",
+    inputTokens: "Input tokens",
+    outputTokens: "Output tokens",
+    totalTokens: "Total tokens",
+    estimatedCost: "Estimated cost",
     emailCount: "Email count",
     importantCount: "Important count",
     llmClassification: "LLM classification",
@@ -56,6 +60,8 @@ const UI_TEXT = {
     workflowSummary: "A compact system overview is available when you want to inspect the workflow path.",
     stepTimingSummary: "Each saved run now includes timestamps and step durations for a clearer operational trace.",
     stepCompletedInDetail: (duration) => `Completed in ${duration}.`,
+    usageRecordedDetail: (tokens, cost) =>
+      tokens > 0 ? `${tokens} total LLM tokens recorded. Estimated cost ${cost}.` : "No LLM token usage recorded for this run.",
     whyThisMatters: "Why this matters",
     projectValue: "Project value",
     projectSummary: "The interface is intentionally product-first, while the engineering story stays available on demand.",
@@ -122,6 +128,10 @@ const UI_TEXT = {
     startedAt: "Gestartet",
     completedAt: "Beendet",
     workflowDuration: "Workflow-Dauer",
+    inputTokens: "Input-Tokens",
+    outputTokens: "Output-Tokens",
+    totalTokens: "Gesamt-Tokens",
+    estimatedCost: "Geschaetzte Kosten",
     emailCount: "E-Mail-Anzahl",
     importantCount: "Wichtige E-Mails",
     llmClassification: "LLM-Klassifizierung",
@@ -152,6 +162,8 @@ const UI_TEXT = {
     workflowSummary: "Eine kompakte Systemansicht ist verfügbar, wenn du den Ablauf genauer ansehen willst.",
     stepTimingSummary: "Jeder gespeicherte Lauf enthält jetzt Zeitstempel und Schrittdauern für eine klarere operative Spur.",
     stepCompletedInDetail: (duration) => `Abgeschlossen in ${duration}.`,
+    usageRecordedDetail: (tokens, cost) =>
+      tokens > 0 ? `${tokens} gesamte LLM-Tokens erfasst. Geschaetzte Kosten ${cost}.` : "Keine LLM-Token-Nutzung fuer diesen Lauf erfasst.",
     whyThisMatters: "Warum das wichtig ist",
     projectValue: "Projektwert",
     projectSummary: "Die Oberfläche bleibt bewusst produktnah, während die technische Sicht bei Bedarf verfügbar ist.",
@@ -602,6 +614,22 @@ function App() {
                       <dd>{dashboardData.metadata.workflowDuration}</dd>
                     </div>
                     <div>
+                      <dt>{ui.inputTokens}</dt>
+                      <dd>{dashboardData.metadata.inputTokens}</dd>
+                    </div>
+                    <div>
+                      <dt>{ui.outputTokens}</dt>
+                      <dd>{dashboardData.metadata.outputTokens}</dd>
+                    </div>
+                    <div>
+                      <dt>{ui.totalTokens}</dt>
+                      <dd>{dashboardData.metadata.totalTokens}</dd>
+                    </div>
+                    <div>
+                      <dt>{ui.estimatedCost}</dt>
+                      <dd>{dashboardData.metadata.estimatedCost}</dd>
+                    </div>
+                    <div>
                       <dt>{ui.emailCount}</dt>
                       <dd>{dashboardData.metadata.emailCount}</dd>
                     </div>
@@ -777,6 +805,10 @@ function buildDashboardData(runData) {
       runStartedAt: formatTimestamp(runMetadata?.run_started_at, locale, ui),
       runCompletedAt: formatTimestamp(runMetadata?.run_completed_at, locale, ui),
       workflowDuration: formatDuration(runMetadata?.workflow_duration_ms),
+      inputTokens: formatInteger(runMetadata?.llm_input_tokens ?? 0),
+      outputTokens: formatInteger(runMetadata?.llm_output_tokens ?? 0),
+      totalTokens: formatInteger(runMetadata?.llm_total_tokens ?? 0),
+      estimatedCost: formatEur(runMetadata?.estimated_cost_eur ?? 0),
       emailCount: runMetadata?.email_count ?? emails.length,
       importantEmailCount: runMetadata?.important_email_count ?? summary.important_email_ids.length,
       llmClassificationEnabled: yesNo(runMetadata?.llm_classification_enabled, ui),
@@ -791,6 +823,7 @@ function buildDashboardData(runData) {
       { label: ui.provider, value: provider.toUpperCase() },
       { label: ui.language, value: language },
       { label: ui.workflowDuration, value: formatDuration(runMetadata?.workflow_duration_ms) },
+      { label: ui.totalTokens, value: formatInteger(runMetadata?.llm_total_tokens ?? 0) },
       { label: ui.emailCount, value: String(runMetadata?.email_count ?? emails.length) },
       {
         label: ui.importantCount,
@@ -821,6 +854,14 @@ function buildTimeline({ ui, date, summary, deadlines, meetings, subscriptions, 
     {
       title: ui.artifactBackedUi,
       detail: ui.artifactBackedUiDetail,
+      status: "completed",
+    },
+    {
+      title: ui.llm,
+      detail: ui.usageRecordedDetail(
+        runMetadata?.llm_total_tokens ?? 0,
+        formatEur(runMetadata?.estimated_cost_eur ?? 0),
+      ),
       status: "completed",
     },
     ...timedSteps,
@@ -878,6 +919,15 @@ function formatDuration(value) {
     return `${value} ms`;
   }
   return `${(value / 1000).toFixed(2)} s`;
+}
+
+function formatInteger(value) {
+  return new Intl.NumberFormat("en-US").format(value ?? 0);
+}
+
+function formatEur(value) {
+  const amount = typeof value === "number" && !Number.isNaN(value) ? value : 0;
+  return `${amount.toFixed(4)} €`;
 }
 
 function humanizeStepName(step) {
