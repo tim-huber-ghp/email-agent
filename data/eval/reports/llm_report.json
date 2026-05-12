@@ -2,7 +2,7 @@
   "strategy": "llm",
   "dataset_path": "data/eval/labeled_emails_adversarial.json",
   "total_examples": 10,
-  "label_accuracy": 0.6,
+  "label_accuracy": 1.0,
   "important_email": {
     "true_positives": 5,
     "false_positives": 0,
@@ -19,9 +19,9 @@
   },
   "deadline_extraction": {
     "true_positives": 2,
-    "false_positives": 1,
+    "false_positives": 0,
     "false_negatives": 0,
-    "precision": 0.667,
+    "precision": 1.0,
     "recall": 1.0
   },
   "meeting_extraction": {
@@ -38,38 +38,5 @@
     "precision": 1.0,
     "recall": 1.0
   },
-  "mismatches": [
-    {
-      "email_id": "adv-004",
-      "subject": "Not urgent, but please send the latest draft by Friday",
-      "expected_label": "urgent",
-      "predicted_label": "needs_reply",
-      "expected_important": true,
-      "predicted_important": true
-    },
-    {
-      "email_id": "adv-005",
-      "subject": "When you get a chance, can you send the travel photo?",
-      "expected_label": "info",
-      "predicted_label": "low_priority",
-      "expected_important": false,
-      "predicted_important": false
-    },
-    {
-      "email_id": "adv-006",
-      "subject": "Interview calendar hold for Monday",
-      "expected_label": "meeting",
-      "predicted_label": "needs_reply",
-      "expected_important": true,
-      "predicted_important": true
-    },
-    {
-      "email_id": "adv-007",
-      "subject": "Your free trial ends tomorrow",
-      "expected_label": "finance",
-      "predicted_label": "urgent",
-      "expected_important": true,
-      "predicted_important": true
-    }
-  ]
+  "mismatches": []
 }

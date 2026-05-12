@@ -66,21 +66,19 @@ def classify_emails_with_llm(
 ) -> list[EmailAssessment]:
     """Classify emails with structured model output."""
 
-    emails = _prepare_emails_for_llm(emails, settings)
+    all_assessments: list[EmailAssessment] = []
 
-    if settings.llm_provider == "gemini":
-        return _classify_emails_with_gemini(emails, settings)
+    for start in range(0, len(emails), settings.llm_max_emails):
+        batch = emails[start : start + settings.llm_max_emails]
+        prepared_batch = _prepare_emails_for_llm(batch, settings)
+        assessments = _classify_email_batch_with_llm(prepared_batch, settings)
+        if len(assessments) != len(batch):
+            raise ValueError(
+                f"Classification batch returned {len(assessments)} assessments for {len(batch)} emails."
+            )
+        all_assessments.extend(assessments)
 
-    client = OpenAI(api_key=settings.openai_api_key)
-    response = client.responses.parse(
-        model=settings.model_name,
-        input=classification_messages(emails),
-        text_format=ClassificationBatch,
-    )
-    parsed = response.output_parsed
-    if parsed is None:
-        raise ValueError("The model did not return a structured classification payload.")
-    return parsed.assessments
+    return all_assessments
 
 
 def generate_summary_with_llm(
@@ -129,6 +127,27 @@ def _classify_emails_with_gemini(
     )
     structured_llm = llm.with_structured_output(ClassificationBatch)
     parsed = structured_llm.invoke(classification_messages(emails))
+    return parsed.assessments
+
+
+def _classify_email_batch_with_llm(
+    emails: list[NormalizedEmail],
+    settings: Settings,
+) -> list[EmailAssessment]:
+    """Classify a single prepared batch with the configured provider."""
+
+    if settings.llm_provider == "gemini":
+        return _classify_emails_with_gemini(emails, settings)
+
+    client = OpenAI(api_key=settings.openai_api_key)
+    response = client.responses.parse(
+        model=settings.model_name,
+        input=classification_messages(emails),
+        text_format=ClassificationBatch,
+    )
+    parsed = response.output_parsed
+    if parsed is None:
+        raise ValueError("The model did not return a structured classification payload.")
     return parsed.assessments
 
 
