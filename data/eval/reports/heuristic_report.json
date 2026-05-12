@@ -1,34 +1,34 @@
 {
   "strategy": "heuristic",
-  "dataset_path": "data/eval/labeled_emails_hard.json",
-  "total_examples": 8,
-  "label_accuracy": 1.0,
+  "dataset_path": "data/eval/labeled_emails_adversarial.json",
+  "total_examples": 10,
+  "label_accuracy": 0.6,
   "important_email": {
     "true_positives": 4,
-    "false_positives": 0,
-    "false_negatives": 0,
-    "precision": 1.0,
-    "recall": 1.0
+    "false_positives": 1,
+    "false_negatives": 1,
+    "precision": 0.8,
+    "recall": 0.8
   },
   "needs_action": {
-    "true_positives": 4,
-    "false_positives": 0,
-    "false_negatives": 0,
-    "precision": 1.0,
-    "recall": 1.0
+    "true_positives": 3,
+    "false_positives": 2,
+    "false_negatives": 1,
+    "precision": 0.6,
+    "recall": 0.75
   },
   "deadline_extraction": {
-    "true_positives": 2,
-    "false_positives": 0,
-    "false_negatives": 0,
-    "precision": 1.0,
-    "recall": 1.0
+    "true_positives": 1,
+    "false_positives": 1,
+    "false_negatives": 1,
+    "precision": 0.5,
+    "recall": 0.5
   },
   "meeting_extraction": {
     "true_positives": 1,
-    "false_positives": 1,
+    "false_positives": 0,
     "false_negatives": 0,
-    "precision": 0.5,
+    "precision": 1.0,
     "recall": 1.0
   },
   "subscription_extraction": {
@@ -38,5 +38,38 @@
     "precision": 0.5,
     "recall": 1.0
   },
-  "mismatches": []
+  "mismatches": [
+    {
+      "email_id": "adv-001",
+      "subject": "Important: your premium discount ends today",
+      "expected_label": "low_priority",
+      "predicted_label": "finance",
+      "expected_important": false,
+      "predicted_important": true
+    },
+    {
+      "email_id": "adv-004",
+      "subject": "Not urgent, but please send the latest draft by Friday",
+      "expected_label": "urgent",
+      "predicted_label": "info",
+      "expected_important": true,
+      "predicted_important": false
+    },
+    {
+      "email_id": "adv-008",
+      "subject": "Please review the new remote policy when convenient",
+      "expected_label": "info",
+      "predicted_label": "low_priority",
+      "expected_important": false,
+      "predicted_important": false
+    },
+    {
+      "email_id": "adv-010",
+      "subject": "Meeting notes from Friday",
+      "expected_label": "info",
+      "predicted_label": "low_priority",
+      "expected_important": false,
+      "predicted_important": false
+    }
+  ]
 }

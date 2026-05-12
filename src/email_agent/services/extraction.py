@@ -26,6 +26,14 @@ SUBSCRIPTION_KEYWORDS = (
     "billing",
     "plan",
 )
+MEETING_STRONG_HINTS = ("invite", "calendar", "zoom", "teams", "google meet", "confirm attendance")
+NEGATED_MEETING_HINTS = ("no meeting needed", "meeting notes", "no calendar invite", "async update")
+NEGATED_SUBSCRIPTION_HINTS = (
+    "one-time payment",
+    "no recurring",
+    "no subscription applies",
+    "not a subscription",
+)
 
 
 def extract_deadlines(
@@ -81,9 +89,14 @@ def extract_meetings(
             continue
 
         haystack = _email_text(email)
-        if assessment.label != "meeting" and not any(
-            keyword in haystack for keyword in ("meeting", "invite", "calendar", "zoom", "teams")
-        ):
+        has_meeting_hint = any(keyword in haystack for keyword in ("meeting", "invite", "calendar", "zoom", "teams"))
+        has_strong_meeting_hint = any(keyword in haystack for keyword in MEETING_STRONG_HINTS)
+        has_negated_meeting_hint = any(keyword in haystack for keyword in NEGATED_MEETING_HINTS)
+
+        if has_negated_meeting_hint:
+            continue
+
+        if assessment.label != "meeting" and not (has_meeting_hint and has_strong_meeting_hint):
             continue
 
         meetings.append(
@@ -118,6 +131,9 @@ def extract_subscriptions(
             continue
 
         if not any(keyword in haystack for keyword in SUBSCRIPTION_KEYWORDS):
+            continue
+
+        if any(keyword in haystack for keyword in NEGATED_SUBSCRIPTION_HINTS):
             continue
 
         subscriptions.append(

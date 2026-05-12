@@ -75,6 +75,29 @@ def test_extract_meetings_picks_up_meeting_signal_and_zoom_location() -> None:
     assert meetings[0].needs_response is True
 
 
+def test_extract_meetings_skips_negated_meeting_language() -> None:
+    email = _email(
+        email_id="msg-2b",
+        subject="No meeting needed, sharing notes async",
+        snippet="Please read the meeting notes when you have time.",
+        body_preview="No calendar invite is needed. This is just an async update.",
+        labels=["work"],
+    )
+    assessments = [
+        EmailAssessment(
+            email_id="msg-2b",
+            label="info",
+            importance_score=45,
+            reason="Useful informational update.",
+            needs_action=False,
+        )
+    ]
+
+    meetings = extract_meetings([email], assessments)
+
+    assert meetings == []
+
+
 def test_extract_subscriptions_picks_up_monthly_billing_signal() -> None:
     email = _email(
         email_id="msg-3",
@@ -100,3 +123,26 @@ def test_extract_subscriptions_picks_up_monthly_billing_signal() -> None:
     assert subscriptions[0].renewal_hint == "Monthly"
     assert subscriptions[0].cancellation_hint == "Cancel anytime"
     assert subscriptions[0].amount_hint == "$29.00"
+
+
+def test_extract_subscriptions_skips_one_time_payments() -> None:
+    email = _email(
+        email_id="msg-3b",
+        subject="Receipt for one-time conference ticket",
+        snippet="Your receipt for the conference ticket is attached.",
+        body_preview="This was a one-time payment. No recurring plan or subscription applies.",
+        labels=["finance"],
+    )
+    assessments = [
+        EmailAssessment(
+            email_id="msg-3b",
+            label="finance",
+            importance_score=80,
+            reason="Contains finance-related keywords.",
+            needs_action=True,
+        )
+    ]
+
+    subscriptions = extract_subscriptions([email], assessments)
+
+    assert subscriptions == []
