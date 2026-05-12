@@ -189,6 +189,9 @@ function buildFallbackRunMetadata({ date, summary, assessments, emails }) {
     email_count: Array.isArray(emails) ? emails.length : 0,
     filtered_email_count: Array.isArray(assessments) ? assessments.length : 0,
     important_email_count: importantEmailCount,
+    uncertain_assessment_count: 0,
+    abstained_assessment_count: 0,
+    llm_fallback_count: 0,
   };
 }
 

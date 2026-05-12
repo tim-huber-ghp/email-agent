@@ -16,7 +16,8 @@ TIME_HINT_PATTERN = re.compile(
     re.IGNORECASE,
 )
 AMOUNT_PATTERN = re.compile(r"(?:\$|eur\s?|€)\s?\d+(?:[.,]\d{2})?", re.IGNORECASE)
-SUBSCRIPTION_KEYWORDS = (
+URL_PATTERN = re.compile(r"https?://\S+", re.IGNORECASE)
+SUBSCRIPTION_STRONG_KEYWORDS = (
     "subscription",
     "monthly",
     "annual",
@@ -24,7 +25,16 @@ SUBSCRIPTION_KEYWORDS = (
     "renews",
     "auto-renew",
     "billing",
+    "recurring",
+    "free trial",
+    "trial ends",
+)
+SUBSCRIPTION_WEAK_KEYWORDS = (
     "plan",
+    "invoice",
+    "charge",
+    "charged",
+    "payment",
 )
 MEETING_STRONG_HINTS = ("invite", "calendar", "zoom", "teams", "google meet", "confirm attendance")
 NEGATED_MEETING_HINTS = ("no meeting needed", "meeting notes", "no calendar invite", "async update")
@@ -130,14 +140,21 @@ def extract_subscriptions(
         if email is None:
             continue
 
-        haystack = _email_text(email)
-        if assessment.label != "finance" and not any(keyword in haystack for keyword in SUBSCRIPTION_KEYWORDS):
-            continue
+        haystack = _subscription_text(email)
+        strong_keyword_count = sum(keyword in haystack for keyword in SUBSCRIPTION_STRONG_KEYWORDS)
+        weak_keyword_count = sum(keyword in haystack for keyword in SUBSCRIPTION_WEAK_KEYWORDS)
+        amount_hint = _extract_amount_hint(haystack)
+        recurring_signal = strong_keyword_count >= 1 or (
+            weak_keyword_count >= 2 and bool(amount_hint)
+        )
 
-        if not any(keyword in haystack for keyword in SUBSCRIPTION_KEYWORDS):
+        if assessment.label != "finance" and not recurring_signal:
             continue
 
         if any(keyword in haystack for keyword in NEGATED_SUBSCRIPTION_HINTS):
+            continue
+
+        if not recurring_signal:
             continue
 
         subscriptions.append(
@@ -146,7 +163,7 @@ def extract_subscriptions(
                 source_email_id=email.id,
                 renewal_hint=_extract_subscription_renewal_hint(email),
                 cancellation_hint=_extract_cancellation_hint(haystack),
-                amount_hint=_extract_amount_hint(haystack),
+                amount_hint=amount_hint,
             )
         )
 
@@ -192,7 +209,7 @@ def _extract_location_hint(haystack: str) -> str:
 
 
 def _extract_subscription_renewal_hint(email: NormalizedEmail) -> str:
-    haystack = _email_text(email)
+    haystack = _subscription_text(email)
     day_match = DAY_HINT_PATTERN.search(haystack)
     if "monthly" in haystack:
         return "Monthly"
@@ -218,6 +235,13 @@ def _extract_amount_hint(haystack: str) -> str:
     if amount_match:
         return " ".join(amount_match.group(0).split())
     return ""
+
+
+def _subscription_text(email: NormalizedEmail) -> str:
+    """Use user-visible content only; URLs create too many false finance matches."""
+
+    content = " ".join([email.subject.lower(), email.snippet.lower(), email.body_preview.lower()])
+    return URL_PATTERN.sub(" ", content)
 
 
 def _extract_service_name(email: NormalizedEmail) -> str:

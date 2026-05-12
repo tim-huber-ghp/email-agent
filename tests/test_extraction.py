@@ -169,3 +169,57 @@ def test_extract_subscriptions_skips_cancelled_subscriptions() -> None:
     subscriptions = extract_subscriptions([email], assessments)
 
     assert subscriptions == []
+
+
+def test_extract_subscriptions_skips_job_network_email_with_cancel_url() -> None:
+    email = _email(
+        email_id="msg-3d",
+        subject="Tim: Kontaktvorschlag für dein persönliches Netzwerk",
+        snippet="JobLeads hat eine passende Headhunter:in für deine Jobsuche gefunden.",
+        body_preview=(
+            "Ein Headhunter passt perfekt zu Ihrer Jobsuche. "
+            "https://www.jobleads.com/login?jl_source=cancellation-confirmation-mail "
+            "Verpasse nicht die Gelegenheit, dich zu vernetzen."
+        ),
+        labels=["CATEGORY_UPDATES", "INBOX"],
+    )
+    assessments = [
+        EmailAssessment(
+            email_id="msg-3d",
+            label="info",
+            importance_score=40,
+            reason="Useful informational update.",
+            needs_action=False,
+        )
+    ]
+
+    subscriptions = extract_subscriptions([email], assessments)
+
+    assert subscriptions == []
+
+
+def test_extract_subscriptions_skips_job_alert_salary_range() -> None:
+    email = _email(
+        email_id="msg-3e",
+        subject="Beliebter Job - schließ dich über 40 Bewerbern an",
+        snippet="Senior AI Software Engineer (all genders)",
+        body_preview=(
+            "Basierend auf deiner letzten Suche glauben wir, dass er gut zu dir passt. "
+            "59.000 - 86.000 €/Jahr (geschätzt für Vollzeit). "
+            "Ich bin interessiert."
+        ),
+        labels=["CATEGORY_UPDATES", "INBOX"],
+    )
+    assessments = [
+        EmailAssessment(
+            email_id="msg-3e",
+            label="info",
+            importance_score=40,
+            reason="Useful informational update.",
+            needs_action=False,
+        )
+    ]
+
+    subscriptions = extract_subscriptions([email], assessments)
+
+    assert subscriptions == []

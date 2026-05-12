@@ -107,6 +107,11 @@ def classify_emails_with_llm_node(state: AgentState, settings: Settings) -> Agen
                 if replaced_count
                 else ""
             ),
+            "uncertain_assessment_count": sum(
+                1 for item in llm_assessments if item.confidence_score < settings.llm_confidence_threshold
+            ),
+            "abstained_assessment_count": sum(1 for item in llm_assessments if item.abstained),
+            "llm_fallback_count": replaced_count,
         }
     except Exception as exc:
         return {
@@ -114,6 +119,9 @@ def classify_emails_with_llm_node(state: AgentState, settings: Settings) -> Agen
             "assessments": [],
             "classification_mode": "llm_failed",
             "classification_error": str(exc),
+            "uncertain_assessment_count": 0,
+            "abstained_assessment_count": 0,
+            "llm_fallback_count": 0,
         }
 
 
@@ -130,6 +138,9 @@ def classify_emails_with_heuristics_node(state: AgentState) -> AgentState:
         "assessments": assessments,
         "classification_mode": "heuristic_fallback" if previous_mode == "llm_failed" else "heuristic",
         "classification_error": previous_error,
+        "uncertain_assessment_count": state.get("uncertain_assessment_count", 0),
+        "abstained_assessment_count": state.get("abstained_assessment_count", 0),
+        "llm_fallback_count": state.get("llm_fallback_count", 0),
     }
 
 
@@ -345,6 +356,9 @@ def save_run(state: AgentState, settings: Settings) -> AgentState:
         email_count=len(state.get("emails", [])),
         filtered_email_count=len(state.get("filtered_emails", [])),
         important_email_count=len(state.get("summary", DailySummary(overview="", headline="")).important_email_ids),
+        uncertain_assessment_count=state.get("uncertain_assessment_count", 0),
+        abstained_assessment_count=state.get("abstained_assessment_count", 0),
+        llm_fallback_count=state.get("llm_fallback_count", 0),
     )
 
     run_dir = persist_run(

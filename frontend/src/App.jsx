@@ -220,6 +220,18 @@ function App() {
                     <dt>Summary route</dt>
                     <dd>{dashboardData.metadata.summaryMode}</dd>
                   </div>
+                  <div>
+                    <dt>Low-confidence items</dt>
+                    <dd>{dashboardData.metadata.uncertainAssessmentCount}</dd>
+                  </div>
+                  <div>
+                    <dt>Abstained items</dt>
+                    <dd>{dashboardData.metadata.abstainedAssessmentCount}</dd>
+                  </div>
+                  <div>
+                    <dt>LLM fallbacks</dt>
+                    <dd>{dashboardData.metadata.llmFallbackCount}</dd>
+                  </div>
                 </dl>
               </div>
             ) : null}
@@ -437,7 +449,10 @@ function buildDashboardData(runData) {
   return {
     headline: summary.headline,
     overview: summary.overview,
-    keyTakeaway: "A calmer daily brief, centered on the few things worth your attention.",
+    keyTakeaway:
+      (runMetadata?.llm_fallback_count ?? 0) > 0
+        ? `Guardrails replaced ${runMetadata?.llm_fallback_count ?? 0} low-confidence classifications with safer fallback logic.`
+        : "A calmer daily brief, centered on the few things worth your attention.",
     dateLabel: formatDate(date),
     dateBadge: date,
     provider: provider.toUpperCase(),
@@ -493,6 +508,14 @@ function buildDashboardData(runData) {
         status: "completed",
       },
       {
+        title: "Guardrails",
+        detail:
+          (runMetadata?.llm_fallback_count ?? 0) > 0
+            ? `Guardrails replaced ${runMetadata?.llm_fallback_count ?? 0} low-confidence classifications and tracked ${runMetadata?.abstained_assessment_count ?? 0} abstentions.`
+            : "No low-confidence classifications needed fallback in this run.",
+        status: "completed",
+      },
+      {
         title: "Next step",
         detail: "Add token, cost, and latency telemetry to the saved run metadata.",
         status: "next",
@@ -505,6 +528,9 @@ function buildDashboardData(runData) {
       llmSummaryEnabled: yesNo(runMetadata?.llm_summary_enabled),
       classificationMode: formatMode(runMetadata?.classification_mode),
       summaryMode: formatMode(runMetadata?.summary_mode),
+      uncertainAssessmentCount: runMetadata?.uncertain_assessment_count ?? 0,
+      abstainedAssessmentCount: runMetadata?.abstained_assessment_count ?? 0,
+      llmFallbackCount: runMetadata?.llm_fallback_count ?? 0,
     },
   };
 }

@@ -38,4 +38,7 @@ class AgentState(TypedDict, total=False):
     llm_enabled_for_run: bool
     llm_classification_enabled_for_run: bool
     llm_summary_enabled_for_run: bool
+    uncertain_assessment_count: int
+    abstained_assessment_count: int
+    llm_fallback_count: int
     run_metadata: RunMetadata
