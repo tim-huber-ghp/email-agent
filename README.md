@@ -112,3 +112,17 @@ To build it:
 cd frontend
 npm run build
 ```
+
+## Evaluation Datasets
+
+The project includes three labeled evaluation sets:
+
+- `data/eval/labeled_emails.json`: simple sanity-check dataset
+- `data/eval/labeled_emails_hard.json`: stronger but still curated dataset
+- `data/eval/labeled_emails_adversarial.json`: intentionally tricky edge cases for stress-testing
+
+Example:
+
+```bash
+.venv/bin/python -m email_agent.cli.main evaluate --dataset data/eval/labeled_emails_adversarial.json --mode heuristic
+```
