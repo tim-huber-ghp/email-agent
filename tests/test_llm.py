@@ -26,6 +26,10 @@ def test_classification_prompt_contains_priority_guidance() -> None:
     assert "Choose meeting over needs_reply" in system_prompt
     assert "Choose finance over urgent" in system_prompt
     assert "'Your free trial ends tomorrow' -> finance" in system_prompt
+    assert "needs_action guidance" in system_prompt
+    assert "prefer needs_action=true" in system_prompt
+    assert "importance_score >= 50" in system_prompt
+    assert "urgent: usually 80-100" in system_prompt
 
 
 def test_classify_emails_with_llm_batches_large_inputs(monkeypatch) -> None:
