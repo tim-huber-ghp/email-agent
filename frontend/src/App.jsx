@@ -11,11 +11,13 @@ const UI_TEXT = {
     noDataBody: "Saved summaries from data/runs/ will appear here automatically.",
     livePill: "Run dashboard",
     signalLabel: "Daily summary",
+    runOverview: "Run overview",
     hideDetails: "Hide details",
     showDetails: "Show details",
     savedRun: "Saved run",
     inspector: "Inspector",
     technicalMetadata: "Technical metadata",
+    inspectorPreview: "Open details for the full technical trace behind this run.",
     provider: "Provider",
     language: "Language",
     llm: "LLM",
@@ -99,11 +101,13 @@ const UI_TEXT = {
     noDataBody: "Gespeicherte Zusammenfassungen aus data/runs/ erscheinen hier automatisch.",
     livePill: "Übersicht",
     signalLabel: "Tageszusammenfassung",
+    runOverview: "Laufüberblick",
     hideDetails: "Details ausblenden",
     showDetails: "Details anzeigen",
     savedRun: "Gespeicherter Lauf",
     inspector: "Inspektor",
     technicalMetadata: "Technische Metadaten",
+    inspectorPreview: "Öffne die Details für die vollständige technische Spur dieses Laufs.",
     provider: "Quelle",
     language: "Sprache",
     llm: "LLM",
@@ -322,7 +326,7 @@ function App() {
             </div>
           </div>
 
-          <div className="signal-card">
+          <div className="signal-card signal-rail">
             <div className="signal-topline">
               <div>
                 <div className="signal-label">{ui.signalLabel}</div>
@@ -352,69 +356,87 @@ function App() {
               <span className="summary-subtle">{dashboardData.provider}</span>
             </div>
 
-            {showInspector ? (
-              <div className="inspector-card">
-                <div className="inspector-header">
-                  <span className="section-kicker">{ui.inspector}</span>
-                  <span className="inspector-note">{ui.technicalMetadata}</span>
-                </div>
+            <div className="signal-rail-body">
+              {showInspector ? (
+                <div className="inspector-card">
+                  <div className="inspector-header">
+                    <span className="section-kicker">{ui.inspector}</span>
+                    <span className="inspector-note">{ui.technicalMetadata}</span>
+                  </div>
 
-                <dl className="meta-grid">
-                  <div>
-                    <dt>{ui.provider}</dt>
-                    <dd>{dashboardData.provider}</dd>
+                  <dl className="meta-grid">
+                    <div>
+                      <dt>{ui.provider}</dt>
+                      <dd>{dashboardData.provider}</dd>
+                    </div>
+                    <div>
+                      <dt>{ui.language}</dt>
+                      <dd>{dashboardData.language}</dd>
+                    </div>
+                    <div>
+                      <dt>{ui.llm}</dt>
+                      <dd>{dashboardData.llmProvider}</dd>
+                    </div>
+                    <div>
+                      <dt>{ui.execution}</dt>
+                      <dd>{dashboardData.executionMode}</dd>
+                    </div>
+                    <div>
+                      <dt>{ui.emailCount}</dt>
+                      <dd>{dashboardData.metadata.emailCount}</dd>
+                    </div>
+                    <div>
+                      <dt>{ui.importantCount}</dt>
+                      <dd>{dashboardData.metadata.importantEmailCount}</dd>
+                    </div>
+                    <div>
+                      <dt>{ui.llmClassification}</dt>
+                      <dd>{dashboardData.metadata.llmClassificationEnabled}</dd>
+                    </div>
+                    <div>
+                      <dt>{ui.llmSummary}</dt>
+                      <dd>{dashboardData.metadata.llmSummaryEnabled}</dd>
+                    </div>
+                    <div>
+                      <dt>{ui.classificationRoute}</dt>
+                      <dd>{dashboardData.metadata.classificationMode}</dd>
+                    </div>
+                    <div>
+                      <dt>{ui.summaryRoute}</dt>
+                      <dd>{dashboardData.metadata.summaryMode}</dd>
+                    </div>
+                    <div>
+                      <dt>{ui.lowConfidenceItems}</dt>
+                      <dd>{dashboardData.metadata.uncertainAssessmentCount}</dd>
+                    </div>
+                    <div>
+                      <dt>{ui.abstainedItems}</dt>
+                      <dd>{dashboardData.metadata.abstainedAssessmentCount}</dd>
+                    </div>
+                    <div>
+                      <dt>{ui.llmFallbacks}</dt>
+                      <dd>{dashboardData.metadata.llmFallbackCount}</dd>
+                    </div>
+                  </dl>
+                </div>
+              ) : (
+                <div className="inspector-preview">
+                  <div className="inspector-preview-header">
+                    <span className="section-kicker">{ui.runOverview}</span>
+                    <span className="inspector-note">{ui.technicalMetadata}</span>
                   </div>
-                  <div>
-                    <dt>{ui.language}</dt>
-                    <dd>{dashboardData.language}</dd>
+                  <p className="inspector-preview-copy">{ui.inspectorPreview}</p>
+                  <div className="inspector-mini-grid">
+                    {dashboardData.previewMeta.map((item) => (
+                      <div key={item.label} className="inspector-mini-card">
+                        <span>{item.label}</span>
+                        <strong>{item.value}</strong>
+                      </div>
+                    ))}
                   </div>
-                  <div>
-                    <dt>{ui.llm}</dt>
-                    <dd>{dashboardData.llmProvider}</dd>
-                  </div>
-                  <div>
-                    <dt>{ui.execution}</dt>
-                    <dd>{dashboardData.executionMode}</dd>
-                  </div>
-                  <div>
-                    <dt>{ui.emailCount}</dt>
-                    <dd>{dashboardData.metadata.emailCount}</dd>
-                  </div>
-                  <div>
-                    <dt>{ui.importantCount}</dt>
-                    <dd>{dashboardData.metadata.importantEmailCount}</dd>
-                  </div>
-                  <div>
-                    <dt>{ui.llmClassification}</dt>
-                    <dd>{dashboardData.metadata.llmClassificationEnabled}</dd>
-                  </div>
-                  <div>
-                    <dt>{ui.llmSummary}</dt>
-                    <dd>{dashboardData.metadata.llmSummaryEnabled}</dd>
-                  </div>
-                  <div>
-                    <dt>{ui.classificationRoute}</dt>
-                    <dd>{dashboardData.metadata.classificationMode}</dd>
-                  </div>
-                  <div>
-                    <dt>{ui.summaryRoute}</dt>
-                    <dd>{dashboardData.metadata.summaryMode}</dd>
-                  </div>
-                  <div>
-                    <dt>{ui.lowConfidenceItems}</dt>
-                    <dd>{dashboardData.metadata.uncertainAssessmentCount}</dd>
-                  </div>
-                  <div>
-                    <dt>{ui.abstainedItems}</dt>
-                    <dd>{dashboardData.metadata.abstainedAssessmentCount}</dd>
-                  </div>
-                  <div>
-                    <dt>{ui.llmFallbacks}</dt>
-                    <dd>{dashboardData.metadata.llmFallbackCount}</dd>
-                  </div>
-                </dl>
-              </div>
-            ) : null}
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </header>
@@ -428,8 +450,9 @@ function App() {
         ))}
       </section>
 
-      <main className="dashboard-grid">
-        <section className="panel panel-wide">
+      <main className="dashboard-columns">
+        <div className="dashboard-column dashboard-column-primary">
+        <section className="panel">
           <div className="panel-heading">
             <div>
               <span className="section-kicker">{ui.inboxFocus}</span>
@@ -496,6 +519,61 @@ function App() {
         <section className="panel">
           <div className="panel-heading">
             <div>
+              <span className="section-kicker">{ui.workflow}</span>
+              <h2>{ui.systemPath}</h2>
+            </div>
+            <button
+              type="button"
+              className="section-toggle"
+              onClick={() => setShowSystemPath((current) => !current)}
+            >
+              {showSystemPath ? ui.hide : ui.view}
+            </button>
+          </div>
+
+          <p className="panel-summary">{ui.workflowSummary}</p>
+
+          {showSystemPath ? (
+            <div className="details-drawer">
+              <div className="timeline">
+                {dashboardData.timeline.map((item) => (
+                  <div className="timeline-item" key={item.title}>
+                    <div className={`timeline-dot status-${item.status}`} />
+                    <div>
+                      <h3>{item.title}</h3>
+                      <p>{item.detail}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : null}
+        </section>
+        </div>
+
+        <div className="dashboard-column dashboard-column-secondary">
+        <section className="panel">
+          <div className="panel-heading">
+            <div>
+              <span className="section-kicker">{ui.actionBoard}</span>
+              <h2>{ui.nextSteps}</h2>
+            </div>
+          </div>
+
+          {dashboardData.actions.length > 0 ? (
+            <ol className="action-list">
+              {dashboardData.actions.map((item) => (
+                <li key={item}>{item}</li>
+              ))}
+            </ol>
+          ) : (
+            <p className="panel-summary">{ui.noFollowup}</p>
+          )}
+        </section>
+
+        <section className="panel">
+          <div className="panel-heading">
+            <div>
               <span className="section-kicker">{ui.meetings}</span>
               <h2>{ui.calendarSignals}</h2>
             </div>
@@ -540,40 +618,6 @@ function App() {
         <section className="panel">
           <div className="panel-heading">
             <div>
-              <span className="section-kicker">{ui.workflow}</span>
-              <h2>{ui.systemPath}</h2>
-            </div>
-            <button
-              type="button"
-              className="section-toggle"
-              onClick={() => setShowSystemPath((current) => !current)}
-            >
-              {showSystemPath ? ui.hide : ui.view}
-            </button>
-          </div>
-
-          <p className="panel-summary">{ui.workflowSummary}</p>
-
-          {showSystemPath ? (
-            <div className="details-drawer">
-              <div className="timeline">
-                {dashboardData.timeline.map((item) => (
-                  <div className="timeline-item" key={item.title}>
-                    <div className={`timeline-dot status-${item.status}`} />
-                    <div>
-                      <h3>{item.title}</h3>
-                      <p>{item.detail}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          ) : null}
-        </section>
-
-        <section className="panel">
-          <div className="panel-heading">
-            <div>
               <span className="section-kicker">{ui.whyThisMatters}</span>
               <h2>{ui.projectValue}</h2>
             </div>
@@ -598,6 +642,7 @@ function App() {
             </div>
           ) : null}
         </section>
+        </div>
       </main>
     </div>
   );
@@ -711,6 +756,12 @@ function buildDashboardData(runData) {
       abstainedAssessmentCount: runMetadata?.abstained_assessment_count ?? 0,
       llmFallbackCount: runMetadata?.llm_fallback_count ?? 0,
     },
+    previewMeta: [
+      { label: ui.provider, value: provider.toUpperCase() },
+      { label: ui.language, value: language },
+      { label: ui.emailCount, value: String(runMetadata?.email_count ?? emails.length) },
+      { label: ui.importantCount, value: String(runMetadata?.important_email_count ?? summary.important_email_ids.length) },
+    ],
   };
 }
 
