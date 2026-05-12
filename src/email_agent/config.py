@@ -23,6 +23,8 @@ class Settings(BaseSettings):
         default=True,
         alias="EMAIL_AGENT_USE_LLM_SUMMARY",
     )
+    llm_confidence_threshold: int = Field(default=70, alias="EMAIL_AGENT_LLM_CONFIDENCE_THRESHOLD")
+    llm_abstain_threshold: int = Field(default=40, alias="EMAIL_AGENT_LLM_ABSTAIN_THRESHOLD")
     llm_max_emails: int = Field(default=6, alias="EMAIL_AGENT_LLM_MAX_EMAILS")
     llm_max_snippet_chars: int = Field(default=120, alias="EMAIL_AGENT_LLM_MAX_SNIPPET_CHARS")
     llm_max_body_chars: int = Field(default=180, alias="EMAIL_AGENT_LLM_MAX_BODY_CHARS")

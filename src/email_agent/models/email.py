@@ -38,3 +38,6 @@ class EmailAssessment(BaseModel):
     importance_score: int = Field(ge=0, le=100)
     reason: str
     needs_action: bool = False
+    confidence_score: int = Field(default=100, ge=0, le=100)
+    abstained: bool = False
+    uncertainty_note: str = ""

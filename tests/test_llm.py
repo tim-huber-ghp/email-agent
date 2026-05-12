@@ -30,6 +30,8 @@ def test_classification_prompt_contains_priority_guidance() -> None:
     assert "prefer needs_action=true" in system_prompt
     assert "importance_score >= 50" in system_prompt
     assert "urgent: usually 80-100" in system_prompt
+    assert "confidence_score from 0 to 100" in system_prompt
+    assert "Set abstained=true" in system_prompt
 
 
 def test_classify_emails_with_llm_batches_large_inputs(monkeypatch) -> None:

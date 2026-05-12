@@ -92,12 +92,21 @@ def classify_emails_with_llm_node(state: AgentState, settings: Settings) -> Agen
 
     filtered_emails = state.get("filtered_emails", [])
     try:
-        assessments = classify_emails_with_llm(filtered_emails, settings)
+        llm_assessments = classify_emails_with_llm(filtered_emails, settings)
+        assessments, replaced_count = _apply_llm_guardrails(
+            emails=filtered_emails,
+            llm_assessments=llm_assessments,
+            settings=settings,
+        )
         return {
             **state,
             "assessments": assessments,
-            "classification_mode": "llm",
-            "classification_error": "",
+            "classification_mode": "llm_guardrailed" if replaced_count else "llm",
+            "classification_error": (
+                f"Fell back to heuristics for {replaced_count} low-confidence classifications."
+                if replaced_count
+                else ""
+            ),
         }
     except Exception as exc:
         return {
@@ -473,7 +482,56 @@ def route_after_filtering(state: AgentState) -> str:
 
 
 def route_after_llm_classification(state: AgentState) -> str:
-    return "extract_action_items" if state.get("classification_mode") == "llm" else "classify_with_heuristics"
+    return (
+        "extract_action_items"
+        if state.get("classification_mode") in {"llm", "llm_guardrailed"}
+        else "classify_with_heuristics"
+    )
+
+
+def _apply_llm_guardrails(
+    *,
+    emails: list[NormalizedEmail],
+    llm_assessments: list[EmailAssessment],
+    settings: Settings,
+) -> tuple[list[EmailAssessment], int]:
+    """Replace low-confidence or abstained LLM assessments with heuristic fallbacks."""
+
+    heuristic_by_id = {email.id: assess_email(email) for email in emails}
+    guarded: list[EmailAssessment] = []
+    replaced_count = 0
+
+    for assessment in llm_assessments:
+        if _should_fallback_assessment(assessment, settings):
+            fallback = heuristic_by_id[assessment.email_id]
+            guarded.append(
+                fallback.model_copy(
+                    update={
+                        "reason": (
+                            f"{fallback.reason} "
+                            f"[Fallback from low-confidence LLM classification: {assessment.reason}]"
+                        ).strip(),
+                        "uncertainty_note": assessment.uncertainty_note or "Low-confidence LLM classification.",
+                    }
+                )
+            )
+            replaced_count += 1
+        else:
+            guarded.append(assessment)
+
+    return guarded, replaced_count
+
+
+def _should_fallback_assessment(assessment: EmailAssessment, settings: Settings) -> bool:
+    """Return whether an LLM assessment should be replaced by a safer heuristic fallback."""
+
+    if assessment.abstained:
+        return True
+    if assessment.confidence_score < settings.llm_abstain_threshold:
+        return True
+    if assessment.confidence_score < settings.llm_confidence_threshold:
+        return True
+    return False
 
 
 def route_after_action_items(state: AgentState) -> str:

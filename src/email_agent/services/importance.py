@@ -99,58 +99,70 @@ def assess_email(email: NormalizedEmail) -> EmailAssessment:
     label = "info"
     reason = "General informational email."
     needs_action = False
+    confidence_score = 60
 
     if (low_priority_signal or promotions_label) and not finance_strong_signal:
         score = 20
         label = "low_priority"
         reason = "Looks like promotional or low-value content."
+        confidence_score = 95
     elif finance_signal and cancellation_complete_signal:
         score = 70
         label = "finance"
         reason = "Contains completed billing or cancellation information."
         needs_action = False
+        confidence_score = 85
     elif finance_signal and ("subscription" in haystack or "renew" in haystack or "billing" in haystack):
         score = 85
         label = "finance"
         reason = "Contains subscription or billing-related keywords."
         needs_action = True
+        confidence_score = 90
     elif deadline_day_signal and ("send" in haystack or "need" in haystack or "deadline" in haystack):
         score = 90
         label = "urgent"
         reason = "Contains a concrete deadline that still requires follow-up."
         needs_action = True
+        confidence_score = 90
     elif (urgent_signal and "not urgent" not in haystack) and not low_priority_hint:
         score = 90
         label = "urgent"
         reason = "Contains urgent language or a time-sensitive deadline."
         needs_action = True
+        confidence_score = 88
     elif finance_signal:
         score = 80
         label = "finance"
         reason = "Contains finance-related keywords."
         needs_action = True
+        confidence_score = 80
     elif meeting_signal and not any(keyword in haystack for keyword in NEGATED_MEETING_HINTS):
         score = 70
         label = "meeting"
         reason = "Looks like a meeting or calendar-related email."
         needs_action = True
+        confidence_score = 80
     elif reply_signal and not any(keyword in haystack for keyword in NEGATED_ACTION_HINTS):
         score = 65
         label = "needs_reply"
         reason = "Likely expects a response."
         needs_action = True
+        confidence_score = 72
     elif optional_reply_signal or info_signal or "fyi" in haystack or "update" in haystack:
         score = 40
         label = "info"
         reason = "Looks like an informational message without urgent follow-up."
+        confidence_score = 78
     elif low_priority_hint:
         score = 30
         label = "info"
         reason = "Looks optional or non-urgent."
+        confidence_score = 70
     else:
         score = 25
         label = "low_priority"
         reason = "No strong signal of importance."
+        confidence_score = 68
 
     return EmailAssessment(
         email_id=email.id,
@@ -158,6 +170,8 @@ def assess_email(email: NormalizedEmail) -> EmailAssessment:
         importance_score=score,
         reason=reason,
         needs_action=needs_action,
+        confidence_score=confidence_score,
+        abstained=False,
     )
 
 
