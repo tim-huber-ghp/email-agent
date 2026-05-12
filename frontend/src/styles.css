@@ -529,6 +529,11 @@ h3 {
   align-content: start;
 }
 
+.dashboard-column-secondary {
+  position: sticky;
+  top: 24px;
+}
+
 .panel {
   border-radius: 24px;
   padding: 24px;
@@ -573,27 +578,39 @@ h3 {
   border-radius: 20px;
   background: rgba(255, 255, 255, 0.72);
   border: 1px solid rgba(17, 18, 20, 0.06);
+  min-width: 0;
 }
 
 .message-topline {
   justify-content: space-between;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 12px;
+  align-items: start;
+  gap: 10px;
+  margin-bottom: 14px;
 }
 
 .sender {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: block;
   color: var(--muted);
   font-size: 0.9rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .tag {
+  flex: 0 0 auto;
   border-radius: 999px;
   padding: 6px 10px;
   color: var(--ink);
   font-weight: 700;
   background: #f1f3f5;
   border: 1px solid rgba(17, 18, 20, 0.08);
+}
+
+.message-card h3 {
+  max-width: 18ch;
 }
 
 .tag-urgent {
@@ -739,6 +756,11 @@ h3 {
   .dashboard-columns,
   .stats-row {
     grid-template-columns: 1fr;
+  }
+
+  .dashboard-column-secondary {
+    position: static;
+    top: auto;
   }
 
   .signal-topline {
