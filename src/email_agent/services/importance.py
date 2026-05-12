@@ -37,6 +37,27 @@ LOW_PRIORITY_HINTS = {
     "unsubscribe",
     "promo",
 }
+JOB_ALERT_HINTS = {
+    "beliebter job",
+    "jobs perfekt auf dich abgestimmt",
+    "top-fähigkeiten",
+    "top-fahigkeiten",
+    "diesen job melden",
+    "weitere passende jobs anzeigen",
+    "du passt auch gut zu diesen jobs",
+    "andere bewerber interessierten sich auch",
+    "weil du dir",
+    "lebenslauf hochladen",
+}
+NETWORKING_HINTS = {
+    "kontaktvorschlag",
+    "headhunter",
+    "jobsuche",
+    "mit headhuntern vernetzen",
+    "partner manager headhunter",
+    "persönliches netzwerk",
+    "personliches netzwerk",
+}
 NEGATED_MEETING_HINTS = {
     "no meeting needed",
     "no calendar invite",
@@ -69,6 +90,8 @@ def assess_email(email: NormalizedEmail) -> EmailAssessment:
     haystack = _email_text(email)
     low_priority_signal = any(keyword in haystack for keyword in LOW_PRIORITY_KEYWORDS)
     low_priority_hint = any(keyword in haystack for keyword in LOW_PRIORITY_HINTS)
+    job_alert_signal = any(keyword in haystack for keyword in JOB_ALERT_HINTS)
+    networking_signal = any(keyword in haystack for keyword in NETWORKING_HINTS)
     info_signal = any(keyword in haystack for keyword in INFO_KEYWORDS)
     finance_signal = any(keyword in haystack for keyword in FINANCE_KEYWORDS)
     finance_strong_signal = any(keyword in haystack for keyword in FINANCE_STRONG_KEYWORDS)
@@ -101,7 +124,13 @@ def assess_email(email: NormalizedEmail) -> EmailAssessment:
     needs_action = False
     confidence_score = 60
 
-    if (low_priority_signal or promotions_label) and not finance_strong_signal:
+    if job_alert_signal or networking_signal:
+        score = 20
+        label = "low_priority"
+        reason = "Looks like a low-priority job alert or networking suggestion."
+        needs_action = False
+        confidence_score = 92
+    elif (low_priority_signal or promotions_label) and not finance_strong_signal:
         score = 20
         label = "low_priority"
         reason = "Looks like promotional or low-value content."

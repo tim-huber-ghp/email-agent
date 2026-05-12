@@ -2,17 +2,17 @@
   "strategy": "heuristic",
   "dataset_path": "data/eval/labeled_emails_real_2026-05-12.json",
   "total_examples": 5,
-  "label_accuracy": 0.2,
+  "label_accuracy": 1.0,
   "important_email": {
     "true_positives": 0,
-    "false_positives": 2,
+    "false_positives": 0,
     "false_negatives": 0,
     "precision": 0.0,
     "recall": 0.0
   },
   "needs_action": {
     "true_positives": 0,
-    "false_positives": 2,
+    "false_positives": 0,
     "false_negatives": 0,
     "precision": 0.0,
     "recall": 0.0
@@ -38,38 +38,5 @@
     "precision": 0.0,
     "recall": 0.0
   },
-  "mismatches": [
-    {
-      "email_id": "real-001",
-      "subject": "Beliebter Job - schlie\u00df dich \u00fcber 40 Bewerbern an",
-      "expected_label": "low_priority",
-      "predicted_label": "info",
-      "expected_important": false,
-      "predicted_important": false
-    },
-    {
-      "email_id": "real-002",
-      "subject": "Tim: Kontaktvorschlag f\u00fcr dein pers\u00f6nliches Netzwerk",
-      "expected_label": "low_priority",
-      "predicted_label": "finance",
-      "expected_important": false,
-      "predicted_important": true
-    },
-    {
-      "email_id": "real-003",
-      "subject": "Beliebter Job - schlie\u00df dich \u00fcber 40 Bewerbern an",
-      "expected_label": "low_priority",
-      "predicted_label": "finance",
-      "expected_important": false,
-      "predicted_important": true
-    },
-    {
-      "email_id": "real-005",
-      "subject": "DuoByte und 5 andere Firmen suchen Kandidaten wie Dich",
-      "expected_label": "low_priority",
-      "predicted_label": "info",
-      "expected_important": false,
-      "predicted_important": false
-    }
-  ]
+  "mismatches": []
 }

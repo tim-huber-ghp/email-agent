@@ -113,3 +113,39 @@ def test_cancelled_subscription_is_finance_without_action() -> None:
 
     assert assessment.label == "finance"
     assert assessment.needs_action is False
+
+
+def test_job_alert_email_stays_low_priority_without_action() -> None:
+    email = _email(
+        "Beliebter Job - schließ dich über 40 Bewerbern an",
+        "Senior AI Software Engineer (all genders)",
+        (
+            "Basierend auf deiner letzten Suche glauben wir, dass er gut zu dir passt. "
+            "Jobs perfekt auf dich abgestimmt. Lebenslauf hochladen."
+        ),
+        ["category_updates", "inbox"],
+    )
+
+    assessment = assess_email(email)
+
+    assert assessment.label == "low_priority"
+    assert assessment.importance_score < 50
+    assert assessment.needs_action is False
+
+
+def test_headhunter_network_email_stays_low_priority_without_action() -> None:
+    email = _email(
+        "Tim: Kontaktvorschlag für dein persönliches Netzwerk",
+        "JobLeads hat eine passende Headhunter:in für deine Jobsuche gefunden.",
+        (
+            "Mit Headhuntern vernetzen. Auch wenn du gerade nicht aktiv auf Jobsuche bist, "
+            "lohnt es sich für die langfristige Karriereplanung."
+        ),
+        ["category_updates", "inbox"],
+    )
+
+    assessment = assess_email(email)
+
+    assert assessment.label == "low_priority"
+    assert assessment.importance_score < 50
+    assert assessment.needs_action is False
