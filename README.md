@@ -2,6 +2,8 @@
 
 An end-to-end Gmail email summary agent built with Python, LangGraph, and React.
 
+I built this project to turn daily email overload into a short, actionable summary, with structured signals such as subscriptions, deadlines, and follow-ups.
+
 It reads daily emails, classifies what matters, extracts structured signals such as deadlines and subscriptions, and saves inspectable run artifacts that power a small dashboard.
 
 ## Why This Project
