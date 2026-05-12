@@ -20,3 +20,12 @@ def test_run_heuristic_evaluation_returns_metrics_and_mismatches() -> None:
     assert report.meeting_extraction.true_positives >= 1
     assert report.subscription_extraction.true_positives >= 1
     assert isinstance(report.mismatches, list)
+
+
+def test_run_heuristic_evaluation_on_hard_dataset_surfaces_mismatches() -> None:
+    report = run_heuristic_evaluation(Path("data/eval/labeled_emails_hard.json"))
+
+    assert report.total_examples >= 8
+    assert report.label_accuracy == 1
+    assert report.meeting_extraction.precision < 1
+    assert report.subscription_extraction.precision < 1

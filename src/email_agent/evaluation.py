@@ -7,9 +7,11 @@ from pathlib import Path
 
 from pydantic import BaseModel, Field
 
-from email_agent.models.email import ImportanceLabel, NormalizedEmail
+from email_agent.config import Settings
+from email_agent.models.email import EmailAssessment, ImportanceLabel, NormalizedEmail
 from email_agent.services.extraction import extract_deadlines, extract_meetings, extract_subscriptions
 from email_agent.services.importance import assess_email
+from email_agent.services.llm import classify_emails_with_llm, llm_classification_enabled
 
 
 class EvaluationExample(BaseModel):
@@ -43,6 +45,7 @@ class BinaryMetric(BaseModel):
 class EvaluationReport(BaseModel):
     """Serializable evaluation output."""
 
+    strategy: str
     dataset_path: str
     total_examples: int
     label_accuracy: float
@@ -67,6 +70,74 @@ def run_heuristic_evaluation(dataset_path: Path) -> EvaluationReport:
     examples = load_evaluation_examples(dataset_path)
     emails = [_example_to_email(example) for example in examples]
     assessments = [assess_email(email) for email in emails]
+    return _build_report(
+        strategy="heuristic",
+        dataset_path=dataset_path,
+        examples=examples,
+        emails=emails,
+        assessments=assessments,
+    )
+
+
+def run_llm_evaluation(dataset_path: Path, settings: Settings) -> EvaluationReport:
+    """Evaluate the LLM classification path on a labeled dataset."""
+
+    if not llm_classification_enabled(settings):
+        raise ValueError(
+            "LLM classification is not enabled. Set EMAIL_AGENT_USE_LLM=true and "
+            "EMAIL_AGENT_USE_LLM_CLASSIFICATION=true with a valid provider key."
+        )
+
+    examples = load_evaluation_examples(dataset_path)
+    emails = [_example_to_email(example) for example in examples]
+    assessments = classify_emails_with_llm(emails, settings)
+    return _build_report(
+        strategy="llm",
+        dataset_path=dataset_path,
+        examples=examples,
+        emails=emails,
+        assessments=assessments,
+    )
+
+
+def run_comparison_evaluation(dataset_path: Path, settings: Settings) -> list[EvaluationReport]:
+    """Run heuristic evaluation and LLM evaluation when enabled."""
+
+    reports = [run_heuristic_evaluation(dataset_path)]
+    if llm_classification_enabled(settings):
+        reports.append(run_llm_evaluation(dataset_path, settings))
+    return reports
+
+
+def save_evaluation_report(report: EvaluationReport, output_path: Path) -> Path:
+    """Persist one evaluation report as JSON."""
+
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    output_path.write_text(
+        json.dumps(report.model_dump(mode="json"), indent=2),
+        encoding="utf-8",
+    )
+    return output_path
+
+
+def save_evaluation_reports(reports: list[EvaluationReport], output_dir: Path) -> list[Path]:
+    """Persist multiple evaluation reports and return their paths."""
+
+    output_dir.mkdir(parents=True, exist_ok=True)
+    saved_paths: list[Path] = []
+    for report in reports:
+        saved_paths.append(save_evaluation_report(report, output_dir / f"{report.strategy}_report.json"))
+    return saved_paths
+
+
+def _build_report(
+    *,
+    strategy: str,
+    dataset_path: Path,
+    examples: list[EvaluationExample],
+    emails: list[NormalizedEmail],
+    assessments: list[EmailAssessment],
+) -> EvaluationReport:
     deadlines = extract_deadlines(emails, assessments, language="en")
     meetings = extract_meetings(emails, assessments)
     subscriptions = extract_subscriptions(emails, assessments)
@@ -121,6 +192,7 @@ def run_heuristic_evaluation(dataset_path: Path) -> EvaluationReport:
         subscription_predicted.append(predicted_subscription)
 
     return EvaluationReport(
+        strategy=strategy,
         dataset_path=str(dataset_path),
         total_examples=len(examples),
         label_accuracy=_safe_divide(label_matches, len(examples)),
@@ -131,17 +203,6 @@ def run_heuristic_evaluation(dataset_path: Path) -> EvaluationReport:
         subscription_extraction=_binary_metric(subscription_expected, subscription_predicted),
         mismatches=mismatches,
     )
-
-
-def save_evaluation_report(report: EvaluationReport, output_path: Path) -> Path:
-    """Persist the evaluation report as JSON."""
-
-    output_path.parent.mkdir(parents=True, exist_ok=True)
-    output_path.write_text(
-        json.dumps(report.model_dump(mode="json"), indent=2),
-        encoding="utf-8",
-    )
-    return output_path
 
 
 def _example_to_email(example: EvaluationExample) -> NormalizedEmail:

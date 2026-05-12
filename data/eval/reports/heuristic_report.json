@@ -1,23 +1,24 @@
 {
-  "dataset_path": "data/eval/labeled_emails.json",
+  "strategy": "heuristic",
+  "dataset_path": "data/eval/labeled_emails_hard.json",
   "total_examples": 8,
   "label_accuracy": 1.0,
   "important_email": {
-    "true_positives": 6,
+    "true_positives": 4,
     "false_positives": 0,
     "false_negatives": 0,
     "precision": 1.0,
     "recall": 1.0
   },
   "needs_action": {
-    "true_positives": 6,
+    "true_positives": 4,
     "false_positives": 0,
     "false_negatives": 0,
     "precision": 1.0,
     "recall": 1.0
   },
   "deadline_extraction": {
-    "true_positives": 3,
+    "true_positives": 2,
     "false_positives": 0,
     "false_negatives": 0,
     "precision": 1.0,
@@ -25,16 +26,16 @@
   },
   "meeting_extraction": {
     "true_positives": 1,
-    "false_positives": 0,
+    "false_positives": 1,
     "false_negatives": 0,
-    "precision": 1.0,
+    "precision": 0.5,
     "recall": 1.0
   },
   "subscription_extraction": {
-    "true_positives": 2,
-    "false_positives": 0,
+    "true_positives": 1,
+    "false_positives": 1,
     "false_negatives": 0,
-    "precision": 1.0,
+    "precision": 0.5,
     "recall": 1.0
   },
   "mismatches": []
