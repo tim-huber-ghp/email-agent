@@ -433,6 +433,21 @@ h3 {
   border-top: 1px solid var(--line);
 }
 
+.sheet-stack {
+  display: grid;
+  gap: 18px;
+}
+
+.sheet-summary {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.65;
+}
+
+.story-list-sheet {
+  margin-top: 0;
+}
+
 .section-toggle {
   border: 1px solid var(--line);
   background: rgba(255, 255, 255, 0.9);
@@ -503,7 +518,7 @@ h3 {
 
 .dashboard-columns {
   display: grid;
-  grid-template-columns: minmax(0, 1.2fr) minmax(320px, 0.88fr);
+  grid-template-columns: minmax(0, 1.34fr) minmax(300px, 0.74fr);
   gap: 18px;
   align-items: start;
 }

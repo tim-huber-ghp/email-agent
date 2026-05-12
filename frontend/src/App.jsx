@@ -191,9 +191,7 @@ function App() {
   const [runData, setRunData] = useState(null);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
-  const [showInspector, setShowInspector] = useState(false);
-  const [showSystemPath, setShowSystemPath] = useState(false);
-  const [showProjectValue, setShowProjectValue] = useState(false);
+  const [activeSheet, setActiveSheet] = useState(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -337,9 +335,9 @@ function App() {
               <button
                 type="button"
                 className="inspector-toggle"
-                onClick={() => setShowInspector((current) => !current)}
+                onClick={() => setActiveSheet((current) => (current === "inspector" ? null : "inspector"))}
               >
-                {showInspector ? ui.hideDetails : ui.showDetails}
+                {activeSheet === "inspector" ? ui.hideDetails : ui.showDetails}
               </button>
             </div>
             <label className="run-picker">
@@ -416,25 +414,6 @@ function App() {
         <section className="panel">
           <div className="panel-heading">
             <div>
-              <span className="section-kicker">{ui.actionBoard}</span>
-              <h2>{ui.nextSteps}</h2>
-            </div>
-          </div>
-
-          {dashboardData.actions.length > 0 ? (
-            <ol className="action-list">
-              {dashboardData.actions.map((item) => (
-                <li key={item}>{item}</li>
-              ))}
-            </ol>
-          ) : (
-            <p className="panel-summary">{ui.noFollowup}</p>
-          )}
-        </section>
-
-        <section className="panel">
-          <div className="panel-heading">
-            <div>
               <span className="section-kicker">{ui.deadlines}</span>
               <h2>{ui.timeSensitiveItems}</h2>
             </div>
@@ -451,61 +430,6 @@ function App() {
             </ul>
           ) : (
             <p className="panel-summary">{ui.noDeadlines}</p>
-          )}
-        </section>
-
-        <section className="panel">
-          <div className="panel-heading">
-            <div>
-              <span className="section-kicker">{ui.workflow}</span>
-              <h2>{ui.systemPath}</h2>
-            </div>
-            <button
-              type="button"
-              className="section-toggle"
-              onClick={() => setShowSystemPath((current) => !current)}
-            >
-              {showSystemPath ? ui.hide : ui.view}
-            </button>
-          </div>
-
-          <p className="panel-summary">{ui.workflowSummary}</p>
-
-          {showSystemPath ? (
-            <div className="details-drawer">
-              <div className="timeline">
-                {dashboardData.timeline.map((item) => (
-                  <div className="timeline-item" key={item.title}>
-                    <div className={`timeline-dot status-${item.status}`} />
-                    <div>
-                      <h3>{item.title}</h3>
-                      <p>{item.detail}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          ) : null}
-        </section>
-        </div>
-
-        <div className="dashboard-column dashboard-column-secondary">
-        <section className="panel">
-          <div className="panel-heading">
-            <div>
-              <span className="section-kicker">{ui.actionBoard}</span>
-              <h2>{ui.nextSteps}</h2>
-            </div>
-          </div>
-
-          {dashboardData.actions.length > 0 ? (
-            <ol className="action-list">
-              {dashboardData.actions.map((item) => (
-                <li key={item}>{item}</li>
-              ))}
-            </ol>
-          ) : (
-            <p className="panel-summary">{ui.noFollowup}</p>
           )}
         </section>
 
@@ -552,6 +476,45 @@ function App() {
             <p className="panel-summary">{ui.noSubscriptions}</p>
           )}
         </section>
+        </div>
+
+        <div className="dashboard-column dashboard-column-secondary">
+        <section className="panel">
+          <div className="panel-heading">
+            <div>
+              <span className="section-kicker">{ui.actionBoard}</span>
+              <h2>{ui.nextSteps}</h2>
+            </div>
+          </div>
+
+          {dashboardData.actions.length > 0 ? (
+            <ol className="action-list">
+              {dashboardData.actions.map((item) => (
+                <li key={item}>{item}</li>
+              ))}
+            </ol>
+          ) : (
+            <p className="panel-summary">{ui.noFollowup}</p>
+          )}
+        </section>
+
+        <section className="panel">
+          <div className="panel-heading">
+            <div>
+              <span className="section-kicker">{ui.workflow}</span>
+              <h2>{ui.systemPath}</h2>
+            </div>
+            <button
+              type="button"
+              className="section-toggle"
+              onClick={() => setActiveSheet((current) => (current === "workflow" ? null : "workflow"))}
+            >
+              {activeSheet === "workflow" ? ui.hide : ui.view}
+            </button>
+          </div>
+
+          <p className="panel-summary">{ui.workflowSummary}</p>
+        </section>
 
         <section className="panel">
           <div className="panel-heading">
@@ -562,106 +525,126 @@ function App() {
             <button
               type="button"
               className="section-toggle"
-              onClick={() => setShowProjectValue((current) => !current)}
+              onClick={() => setActiveSheet((current) => (current === "project" ? null : "project"))}
             >
-              {showProjectValue ? ui.hide : ui.view}
+              {activeSheet === "project" ? ui.hide : ui.view}
             </button>
           </div>
 
           <p className="panel-summary">{ui.projectSummary}</p>
-
-          {showProjectValue ? (
-            <div className="details-drawer">
-              <ul className="story-list">
-                <li>{ui.projectBullet1}</li>
-                <li>{ui.projectBullet2}</li>
-                <li>{ui.projectBullet3}</li>
-              </ul>
-            </div>
-          ) : null}
         </section>
         </div>
       </main>
 
-      {showInspector ? (
+      {activeSheet ? (
         <div className="sheet-layer" role="presentation">
           <button
             type="button"
             className="sheet-backdrop"
             aria-label={ui.close}
-            onClick={() => setShowInspector(false)}
+            onClick={() => setActiveSheet(null)}
           />
-          <aside className="sheet-panel" aria-label={ui.technicalMetadata}>
+          <aside className="sheet-panel" aria-label={getSheetTitle(activeSheet, ui)}>
             <div className="sheet-panel-inner">
               <div className="sheet-header">
                 <div>
-                  <span className="section-kicker">{ui.inspector}</span>
-                  <h2>{ui.technicalMetadata}</h2>
+                  <span className="section-kicker">{getSheetKicker(activeSheet, ui)}</span>
+                  <h2>{getSheetTitle(activeSheet, ui)}</h2>
                 </div>
                 <button
                   type="button"
                   className="sheet-close"
-                  onClick={() => setShowInspector(false)}
+                  onClick={() => setActiveSheet(null)}
                 >
                   {ui.close}
                 </button>
               </div>
 
               <div className="sheet-section">
-                <dl className="meta-grid">
-                  <div>
-                    <dt>{ui.provider}</dt>
-                    <dd>{dashboardData.provider}</dd>
+                {activeSheet === "inspector" ? (
+                  <dl className="meta-grid">
+                    <div>
+                      <dt>{ui.provider}</dt>
+                      <dd>{dashboardData.provider}</dd>
+                    </div>
+                    <div>
+                      <dt>{ui.language}</dt>
+                      <dd>{dashboardData.language}</dd>
+                    </div>
+                    <div>
+                      <dt>{ui.llm}</dt>
+                      <dd>{dashboardData.llmProvider}</dd>
+                    </div>
+                    <div>
+                      <dt>{ui.execution}</dt>
+                      <dd>{dashboardData.executionMode}</dd>
+                    </div>
+                    <div>
+                      <dt>{ui.emailCount}</dt>
+                      <dd>{dashboardData.metadata.emailCount}</dd>
+                    </div>
+                    <div>
+                      <dt>{ui.importantCount}</dt>
+                      <dd>{dashboardData.metadata.importantEmailCount}</dd>
+                    </div>
+                    <div>
+                      <dt>{ui.llmClassification}</dt>
+                      <dd>{dashboardData.metadata.llmClassificationEnabled}</dd>
+                    </div>
+                    <div>
+                      <dt>{ui.llmSummary}</dt>
+                      <dd>{dashboardData.metadata.llmSummaryEnabled}</dd>
+                    </div>
+                    <div>
+                      <dt>{ui.classificationRoute}</dt>
+                      <dd>{dashboardData.metadata.classificationMode}</dd>
+                    </div>
+                    <div>
+                      <dt>{ui.summaryRoute}</dt>
+                      <dd>{dashboardData.metadata.summaryMode}</dd>
+                    </div>
+                    <div>
+                      <dt>{ui.lowConfidenceItems}</dt>
+                      <dd>{dashboardData.metadata.uncertainAssessmentCount}</dd>
+                    </div>
+                    <div>
+                      <dt>{ui.abstainedItems}</dt>
+                      <dd>{dashboardData.metadata.abstainedAssessmentCount}</dd>
+                    </div>
+                    <div>
+                      <dt>{ui.llmFallbacks}</dt>
+                      <dd>{dashboardData.metadata.llmFallbackCount}</dd>
+                    </div>
+                  </dl>
+                ) : null}
+
+                {activeSheet === "workflow" ? (
+                  <div className="sheet-stack">
+                    <p className="sheet-summary">{ui.workflowSummary}</p>
+                    <div className="timeline">
+                      {dashboardData.timeline.map((item) => (
+                        <div className="timeline-item" key={item.title}>
+                          <div className={`timeline-dot status-${item.status}`} />
+                          <div>
+                            <h3>{item.title}</h3>
+                            <p>{item.detail}</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
                   </div>
-                  <div>
-                    <dt>{ui.language}</dt>
-                    <dd>{dashboardData.language}</dd>
+                ) : null}
+
+                {activeSheet === "project" ? (
+                  <div className="sheet-stack">
+                    <p className="sheet-summary">{ui.projectSummary}</p>
+                    <ul className="story-list story-list-sheet">
+                      <li>{ui.projectBullet1}</li>
+                      <li>{ui.projectBullet2}</li>
+                      <li>{ui.projectBullet3}</li>
+                    </ul>
                   </div>
-                  <div>
-                    <dt>{ui.llm}</dt>
-                    <dd>{dashboardData.llmProvider}</dd>
-                  </div>
-                  <div>
-                    <dt>{ui.execution}</dt>
-                    <dd>{dashboardData.executionMode}</dd>
-                  </div>
-                  <div>
-                    <dt>{ui.emailCount}</dt>
-                    <dd>{dashboardData.metadata.emailCount}</dd>
-                  </div>
-                  <div>
-                    <dt>{ui.importantCount}</dt>
-                    <dd>{dashboardData.metadata.importantEmailCount}</dd>
-                  </div>
-                  <div>
-                    <dt>{ui.llmClassification}</dt>
-                    <dd>{dashboardData.metadata.llmClassificationEnabled}</dd>
-                  </div>
-                  <div>
-                    <dt>{ui.llmSummary}</dt>
-                    <dd>{dashboardData.metadata.llmSummaryEnabled}</dd>
-                  </div>
-                  <div>
-                    <dt>{ui.classificationRoute}</dt>
-                    <dd>{dashboardData.metadata.classificationMode}</dd>
-                  </div>
-                  <div>
-                    <dt>{ui.summaryRoute}</dt>
-                    <dd>{dashboardData.metadata.summaryMode}</dd>
-                  </div>
-                  <div>
-                    <dt>{ui.lowConfidenceItems}</dt>
-                    <dd>{dashboardData.metadata.uncertainAssessmentCount}</dd>
-                  </div>
-                  <div>
-                    <dt>{ui.abstainedItems}</dt>
-                    <dd>{dashboardData.metadata.abstainedAssessmentCount}</dd>
-                  </div>
-                  <div>
-                    <dt>{ui.llmFallbacks}</dt>
-                    <dd>{dashboardData.metadata.llmFallbackCount}</dd>
-                  </div>
-                </dl>
+                ) : null}
               </div>
             </div>
           </aside>
@@ -676,6 +659,26 @@ export default App;
 function pickPreferredRun(runs) {
   const realRun = runs.find((run) => !run.isMock);
   return realRun ?? runs[0];
+}
+
+function getSheetKicker(activeSheet, ui) {
+  if (activeSheet === "workflow") {
+    return ui.workflow;
+  }
+  if (activeSheet === "project") {
+    return ui.whyThisMatters;
+  }
+  return ui.inspector;
+}
+
+function getSheetTitle(activeSheet, ui) {
+  if (activeSheet === "workflow") {
+    return ui.systemPath;
+  }
+  if (activeSheet === "project") {
+    return ui.projectValue;
+  }
+  return ui.technicalMetadata;
 }
 
 function buildDashboardData(runData) {
