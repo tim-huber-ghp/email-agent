@@ -569,12 +569,12 @@ def _build_action_description(
         if assessment.label == "urgent":
             return (
                 f"Antworte moeglichst schnell auf '{email.subject}' von {email.sender} "
-                "oder pruefe die Nachricht sofort."
+                "oder prüfe die Nachricht sofort."
             )
         if assessment.label == "meeting":
-            return f"Pruefe die Besprechungsdetails in '{email.subject}'."
+            return f"Prüfe die Besprechungsdetails in '{email.subject}'."
         if assessment.label == "finance":
-            return f"Pruefe die finanzbezogene Nachricht '{email.subject}'."
+            return f"Prüfe die finanzbezogene Nachricht '{email.subject}'."
         return f"Bearbeite die E-Mail '{email.subject}' von {email.sender} weiter."
 
     if assessment.label == "urgent":

@@ -12,6 +12,7 @@ const UI_TEXT = {
     livePill: "Run dashboard",
     signalLabel: "Daily summary",
     runOverview: "Run overview",
+    close: "Close",
     hideDetails: "Hide details",
     showDetails: "Show details",
     savedRun: "Saved run",
@@ -102,6 +103,7 @@ const UI_TEXT = {
     livePill: "Übersicht",
     signalLabel: "Tageszusammenfassung",
     runOverview: "Laufüberblick",
+    close: "Schließen",
     hideDetails: "Details ausblenden",
     showDetails: "Details anzeigen",
     savedRun: "Gespeicherter Lauf",
@@ -357,85 +359,21 @@ function App() {
             </div>
 
             <div className="signal-rail-body">
-              {showInspector ? (
-                <div className="inspector-card">
-                  <div className="inspector-header">
-                    <span className="section-kicker">{ui.inspector}</span>
-                    <span className="inspector-note">{ui.technicalMetadata}</span>
-                  </div>
-
-                  <dl className="meta-grid">
-                    <div>
-                      <dt>{ui.provider}</dt>
-                      <dd>{dashboardData.provider}</dd>
-                    </div>
-                    <div>
-                      <dt>{ui.language}</dt>
-                      <dd>{dashboardData.language}</dd>
-                    </div>
-                    <div>
-                      <dt>{ui.llm}</dt>
-                      <dd>{dashboardData.llmProvider}</dd>
-                    </div>
-                    <div>
-                      <dt>{ui.execution}</dt>
-                      <dd>{dashboardData.executionMode}</dd>
-                    </div>
-                    <div>
-                      <dt>{ui.emailCount}</dt>
-                      <dd>{dashboardData.metadata.emailCount}</dd>
-                    </div>
-                    <div>
-                      <dt>{ui.importantCount}</dt>
-                      <dd>{dashboardData.metadata.importantEmailCount}</dd>
-                    </div>
-                    <div>
-                      <dt>{ui.llmClassification}</dt>
-                      <dd>{dashboardData.metadata.llmClassificationEnabled}</dd>
-                    </div>
-                    <div>
-                      <dt>{ui.llmSummary}</dt>
-                      <dd>{dashboardData.metadata.llmSummaryEnabled}</dd>
-                    </div>
-                    <div>
-                      <dt>{ui.classificationRoute}</dt>
-                      <dd>{dashboardData.metadata.classificationMode}</dd>
-                    </div>
-                    <div>
-                      <dt>{ui.summaryRoute}</dt>
-                      <dd>{dashboardData.metadata.summaryMode}</dd>
-                    </div>
-                    <div>
-                      <dt>{ui.lowConfidenceItems}</dt>
-                      <dd>{dashboardData.metadata.uncertainAssessmentCount}</dd>
-                    </div>
-                    <div>
-                      <dt>{ui.abstainedItems}</dt>
-                      <dd>{dashboardData.metadata.abstainedAssessmentCount}</dd>
-                    </div>
-                    <div>
-                      <dt>{ui.llmFallbacks}</dt>
-                      <dd>{dashboardData.metadata.llmFallbackCount}</dd>
-                    </div>
-                  </dl>
+              <div className="inspector-preview">
+                <div className="inspector-preview-header">
+                  <span className="section-kicker">{ui.runOverview}</span>
+                  <span className="inspector-note">{ui.technicalMetadata}</span>
                 </div>
-              ) : (
-                <div className="inspector-preview">
-                  <div className="inspector-preview-header">
-                    <span className="section-kicker">{ui.runOverview}</span>
-                    <span className="inspector-note">{ui.technicalMetadata}</span>
-                  </div>
-                  <p className="inspector-preview-copy">{ui.inspectorPreview}</p>
-                  <div className="inspector-mini-grid">
-                    {dashboardData.previewMeta.map((item) => (
-                      <div key={item.label} className="inspector-mini-card">
-                        <span>{item.label}</span>
-                        <strong>{item.value}</strong>
-                      </div>
-                    ))}
-                  </div>
+                <p className="inspector-preview-copy">{ui.inspectorPreview}</p>
+                <div className="inspector-mini-grid">
+                  {dashboardData.previewMeta.map((item) => (
+                    <div key={item.label} className="inspector-mini-card">
+                      <span>{item.label}</span>
+                      <strong>{item.value}</strong>
+                    </div>
+                  ))}
                 </div>
-              )}
+              </div>
             </div>
           </div>
         </div>
@@ -644,6 +582,91 @@ function App() {
         </section>
         </div>
       </main>
+
+      {showInspector ? (
+        <div className="sheet-layer" role="presentation">
+          <button
+            type="button"
+            className="sheet-backdrop"
+            aria-label={ui.close}
+            onClick={() => setShowInspector(false)}
+          />
+          <aside className="sheet-panel" aria-label={ui.technicalMetadata}>
+            <div className="sheet-panel-inner">
+              <div className="sheet-header">
+                <div>
+                  <span className="section-kicker">{ui.inspector}</span>
+                  <h2>{ui.technicalMetadata}</h2>
+                </div>
+                <button
+                  type="button"
+                  className="sheet-close"
+                  onClick={() => setShowInspector(false)}
+                >
+                  {ui.close}
+                </button>
+              </div>
+
+              <div className="sheet-section">
+                <dl className="meta-grid">
+                  <div>
+                    <dt>{ui.provider}</dt>
+                    <dd>{dashboardData.provider}</dd>
+                  </div>
+                  <div>
+                    <dt>{ui.language}</dt>
+                    <dd>{dashboardData.language}</dd>
+                  </div>
+                  <div>
+                    <dt>{ui.llm}</dt>
+                    <dd>{dashboardData.llmProvider}</dd>
+                  </div>
+                  <div>
+                    <dt>{ui.execution}</dt>
+                    <dd>{dashboardData.executionMode}</dd>
+                  </div>
+                  <div>
+                    <dt>{ui.emailCount}</dt>
+                    <dd>{dashboardData.metadata.emailCount}</dd>
+                  </div>
+                  <div>
+                    <dt>{ui.importantCount}</dt>
+                    <dd>{dashboardData.metadata.importantEmailCount}</dd>
+                  </div>
+                  <div>
+                    <dt>{ui.llmClassification}</dt>
+                    <dd>{dashboardData.metadata.llmClassificationEnabled}</dd>
+                  </div>
+                  <div>
+                    <dt>{ui.llmSummary}</dt>
+                    <dd>{dashboardData.metadata.llmSummaryEnabled}</dd>
+                  </div>
+                  <div>
+                    <dt>{ui.classificationRoute}</dt>
+                    <dd>{dashboardData.metadata.classificationMode}</dd>
+                  </div>
+                  <div>
+                    <dt>{ui.summaryRoute}</dt>
+                    <dd>{dashboardData.metadata.summaryMode}</dd>
+                  </div>
+                  <div>
+                    <dt>{ui.lowConfidenceItems}</dt>
+                    <dd>{dashboardData.metadata.uncertainAssessmentCount}</dd>
+                  </div>
+                  <div>
+                    <dt>{ui.abstainedItems}</dt>
+                    <dd>{dashboardData.metadata.abstainedAssessmentCount}</dd>
+                  </div>
+                  <div>
+                    <dt>{ui.llmFallbacks}</dt>
+                    <dd>{dashboardData.metadata.llmFallbackCount}</dd>
+                  </div>
+                </dl>
+              </div>
+            </div>
+          </aside>
+        </div>
+      ) : null}
     </div>
   );
 }

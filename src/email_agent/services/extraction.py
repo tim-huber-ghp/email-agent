@@ -72,7 +72,7 @@ def extract_deadlines(
             continue
 
         if language == "de":
-            description = f"Frist oder zeitkritische Nachricht in '{email.subject}' pruefen."
+            description = f"Frist oder zeitkritische Nachricht in '{email.subject}' prüfen."
         else:
             description = f"Review the time-sensitive item in '{email.subject}'."
 
