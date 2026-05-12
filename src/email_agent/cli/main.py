@@ -21,6 +21,8 @@ import typer
 from email_agent.config import Settings, get_settings
 from email_agent.evaluation import (
     EvaluationReport,
+    export_real_email_drafts,
+    finalize_real_email_dataset,
     run_comparison_evaluation,
     run_heuristic_evaluation,
     run_llm_evaluation,
@@ -178,6 +180,88 @@ def evaluate(
             f"{_label('Saved evaluation report to', 'Evaluationsbericht gespeichert unter', is_german)}: "
             f"{output_path}"
         )
+
+
+@app.command("prepare-real-eval")
+def prepare_real_eval(
+    run_date: str | None = typer.Option(
+        None,
+        help="Date to fetch from Gmail in YYYY-MM-DD format. Defaults to today.",
+    ),
+    output: str | None = typer.Option(
+        None,
+        help="Optional output path for the anonymized draft dataset.",
+    ),
+) -> None:
+    """Export anonymized Gmail examples into a draft evaluation dataset."""
+
+    settings = get_settings()
+    is_german = settings.language == "de"
+    target_date = run_date or date.today().isoformat()
+    provider = GmailProvider(settings)
+    raw_emails = provider.fetch_emails_for_day(date.fromisoformat(target_date))
+
+    if output:
+        output_path = Path(output)
+    else:
+        output_path = settings.data_dir / "eval" / "drafts" / f"real_email_candidates_{target_date}.json"
+
+    saved_path = export_real_email_drafts(raw_emails, output_path)
+
+    typer.echo(f"{_label('Date', 'Datum', is_german)}: {target_date}")
+    typer.echo(f"{_label('Examples', 'Beispiele', is_german)}: {len(raw_emails)}")
+    typer.echo(
+        f"{_label('Saved anonymized draft dataset to', 'Anonymisierten Entwurfsdatensatz gespeichert unter', is_german)}: "
+        f"{saved_path}"
+    )
+    typer.echo(
+        _label(
+            "Next: review the heuristic_* suggestions and fill your final expected_* labels in a copied labeled dataset.",
+            "Als Nächstes: prüfe die heuristic_*-Vorschläge und trage danach deine finalen expected_*-Labels in eine kopierte Label-Datei ein.",
+            is_german,
+        )
+    )
+
+
+@app.command("finalize-real-eval")
+def finalize_real_eval(
+    draft: str = typer.Option(
+        ...,
+        help="Path to the reviewed draft dataset.",
+    ),
+    output: str | None = typer.Option(
+        None,
+        help="Optional output path for the finalized labeled dataset.",
+    ),
+) -> None:
+    """Convert a reviewed draft dataset into the final eval schema."""
+
+    settings = get_settings()
+    is_german = settings.language == "de"
+    draft_path = Path(draft)
+
+    if output:
+        output_path = Path(output)
+    else:
+        stem = draft_path.stem.replace("real_email_candidates_", "labeled_emails_real_")
+        output_path = settings.data_dir / "eval" / f"{stem}.json"
+
+    saved_path = finalize_real_email_dataset(draft_path, output_path)
+
+    typer.echo(
+        f"{_label('Reviewed draft', 'Gepruefter Entwurf', is_german)}: {draft_path}"
+    )
+    typer.echo(
+        f"{_label('Saved finalized dataset to', 'Finalen Datensatz gespeichert unter', is_german)}: "
+        f"{saved_path}"
+    )
+    typer.echo(
+        _label(
+            "Next: run evaluate --dataset on the finalized file.",
+            "Als Nächstes: fuehre evaluate --dataset auf der finalen Datei aus.",
+            is_german,
+        )
+    )
 
 
 def _print_metric(label: str, metric: object) -> None:

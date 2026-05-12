@@ -1,42 +1,42 @@
 {
   "strategy": "llm",
-  "dataset_path": "data/eval/labeled_emails_adversarial.json",
-  "total_examples": 10,
+  "dataset_path": "data/eval/labeled_emails_real_2026-05-12.json",
+  "total_examples": 5,
   "label_accuracy": 1.0,
   "important_email": {
-    "true_positives": 5,
+    "true_positives": 0,
     "false_positives": 0,
     "false_negatives": 0,
-    "precision": 1.0,
-    "recall": 1.0
+    "precision": 0.0,
+    "recall": 0.0
   },
   "needs_action": {
-    "true_positives": 3,
+    "true_positives": 0,
     "false_positives": 0,
-    "false_negatives": 1,
-    "precision": 1.0,
-    "recall": 0.75
+    "false_negatives": 4,
+    "precision": 0.0,
+    "recall": 0.0
   },
   "deadline_extraction": {
-    "true_positives": 2,
+    "true_positives": 0,
     "false_positives": 0,
     "false_negatives": 0,
-    "precision": 1.0,
-    "recall": 1.0
+    "precision": 0.0,
+    "recall": 0.0
   },
   "meeting_extraction": {
-    "true_positives": 1,
-    "false_positives": 0,
+    "true_positives": 0,
+    "false_positives": 2,
     "false_negatives": 0,
-    "precision": 1.0,
-    "recall": 1.0
+    "precision": 0.0,
+    "recall": 0.0
   },
   "subscription_extraction": {
-    "true_positives": 1,
+    "true_positives": 0,
     "false_positives": 0,
     "false_negatives": 0,
-    "precision": 1.0,
-    "recall": 1.0
+    "precision": 0.0,
+    "recall": 0.0
   },
   "mismatches": []
 }

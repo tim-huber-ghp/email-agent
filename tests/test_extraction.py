@@ -98,6 +98,33 @@ def test_extract_meetings_skips_negated_meeting_language() -> None:
     assert meetings == []
 
 
+def test_extract_meetings_skips_teamgeist_job_alert_false_positive() -> None:
+    email = _email(
+        email_id="msg-2c",
+        subject="Beliebter Job - schließ dich über 40 Bewerbern an",
+        snippet="Senior AI Software Engineer (all genders)",
+        body_preview=(
+            "Bist du auf der Suche nach einem Ort, wo positive Einstellung und "
+            "unglaublicher Teamgeist die Schlüsselwerte sind? "
+            "Wir validieren und implementieren neue Technologien."
+        ),
+        labels=["category_updates", "inbox"],
+    )
+    assessments = [
+        EmailAssessment(
+            email_id="msg-2c",
+            label="low_priority",
+            importance_score=20,
+            reason="Job alert.",
+            needs_action=False,
+        )
+    ]
+
+    meetings = extract_meetings([email], assessments)
+
+    assert meetings == []
+
+
 def test_extract_subscriptions_picks_up_monthly_billing_signal() -> None:
     email = _email(
         email_id="msg-3",

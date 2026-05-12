@@ -36,7 +36,6 @@ SUBSCRIPTION_WEAK_KEYWORDS = (
     "charged",
     "payment",
 )
-MEETING_STRONG_HINTS = ("invite", "calendar", "zoom", "teams", "google meet", "confirm attendance")
 NEGATED_MEETING_HINTS = ("no meeting needed", "meeting notes", "no calendar invite", "async update")
 NEGATED_SUBSCRIPTION_HINTS = (
     "one-time payment",
@@ -103,8 +102,8 @@ def extract_meetings(
             continue
 
         haystack = _email_text(email)
-        has_meeting_hint = any(keyword in haystack for keyword in ("meeting", "invite", "calendar", "zoom", "teams"))
-        has_strong_meeting_hint = any(keyword in haystack for keyword in MEETING_STRONG_HINTS)
+        has_meeting_hint = _has_meeting_hint(haystack)
+        has_strong_meeting_hint = _has_strong_meeting_hint(haystack)
         has_negated_meeting_hint = any(keyword in haystack for keyword in NEGATED_MEETING_HINTS)
 
         if has_negated_meeting_hint:
@@ -199,11 +198,11 @@ def _extract_meeting_when_hint(email: NormalizedEmail) -> str:
 
 
 def _extract_location_hint(haystack: str) -> str:
-    if "zoom" in haystack:
+    if _contains_term(haystack, "zoom"):
         return "Zoom"
     if "google meet" in haystack or "meet.google" in haystack:
         return "Google Meet"
-    if "teams" in haystack:
+    if _contains_term(haystack, "teams"):
         return "Microsoft Teams"
     return ""
 
@@ -242,6 +241,52 @@ def _subscription_text(email: NormalizedEmail) -> str:
 
     content = " ".join([email.subject.lower(), email.snippet.lower(), email.body_preview.lower()])
     return URL_PATTERN.sub(" ", content)
+
+
+def _has_meeting_hint(haystack: str) -> bool:
+    return any(
+        [
+            _contains_term(haystack, "meeting"),
+            _contains_term(haystack, "invite"),
+            _contains_term(haystack, "calendar"),
+            _contains_term(haystack, "zoom"),
+            "google meet" in haystack,
+            "meet.google" in haystack,
+            _has_video_platform_context(haystack),
+        ]
+    )
+
+
+def _has_strong_meeting_hint(haystack: str) -> bool:
+    return any(
+        [
+            _contains_term(haystack, "invite"),
+            _contains_term(haystack, "calendar"),
+            _contains_term(haystack, "meeting"),
+            "google meet" in haystack,
+            "confirm attendance" in haystack,
+            _has_video_platform_context(haystack),
+        ]
+    )
+
+
+def _contains_term(haystack: str, term: str) -> bool:
+    return re.search(rf"\b{re.escape(term)}\b", haystack, re.IGNORECASE) is not None
+
+
+def _has_video_platform_context(haystack: str) -> bool:
+    """Treat Zoom/Teams as meeting evidence only in scheduling contexts."""
+
+    has_platform = _contains_term(haystack, "zoom") or _contains_term(haystack, "teams")
+    has_scheduling = any(
+        [
+            _contains_term(haystack, "meeting"),
+            _contains_term(haystack, "invite"),
+            _contains_term(haystack, "calendar"),
+            "confirm attendance" in haystack,
+        ]
+    )
+    return has_platform and has_scheduling
 
 
 def _extract_service_name(email: NormalizedEmail) -> str:
