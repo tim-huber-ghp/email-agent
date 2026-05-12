@@ -1,5 +1,184 @@
 import { useEffect, useMemo, useState } from "react";
 
+const UI_TEXT = {
+  en: {
+    loadingKicker: "Loading",
+    loadingTitle: "Loading run artifacts...",
+    frontendKicker: "Frontend",
+    loadErrorTitle: "Could not load saved runs",
+    noDataKicker: "No data yet",
+    noDataTitle: "Run the email agent first",
+    noDataBody: "Saved summaries from data/runs/ will appear here automatically.",
+    livePill: "Run dashboard",
+    signalLabel: "Daily summary",
+    hideDetails: "Hide details",
+    showDetails: "Show details",
+    savedRun: "Saved run",
+    inspector: "Inspector",
+    technicalMetadata: "Technical metadata",
+    provider: "Provider",
+    language: "Language",
+    llm: "LLM",
+    execution: "Execution",
+    emailCount: "Email count",
+    importantCount: "Important count",
+    llmClassification: "LLM classification",
+    llmSummary: "LLM summary",
+    classificationRoute: "Classification route",
+    summaryRoute: "Summary route",
+    lowConfidenceItems: "Low-confidence items",
+    abstainedItems: "Abstained items",
+    llmFallbacks: "LLM fallbacks",
+    inboxFocus: "Inbox focus",
+    importantMessages: "Important messages",
+    actionBoard: "Action board",
+    nextSteps: "Next steps",
+    noFollowup: "No follow-up actions were extracted for this run.",
+    deadlines: "Deadlines",
+    timeSensitiveItems: "Time-sensitive items",
+    noDeadlines: "No explicit deadline signals were extracted for this run.",
+    meetings: "Meetings",
+    calendarSignals: "Calendar signals",
+    noMeetings: "No meeting invitations or scheduling signals were extracted.",
+    subscriptions: "Subscriptions",
+    recurringCharges: "Recurring charges",
+    noSubscriptions: "No likely recurring subscriptions were extracted for this run.",
+    workflow: "Workflow",
+    systemPath: "System path",
+    hide: "Hide",
+    view: "View",
+    workflowSummary: "A compact system overview is available when you want to inspect the workflow path.",
+    whyThisMatters: "Why this matters",
+    projectValue: "Project value",
+    projectSummary: "The interface is intentionally product-first, while the engineering story stays available on demand.",
+    projectBullet1: "Real Gmail runs and saved artifacts already drive the interface.",
+    projectBullet2: "The product view stays clean while technical metadata remains accessible on demand.",
+    projectBullet3: "The next step could be a lightweight API or live refresh after each summary run.",
+    importantMails: "Important mails",
+    subscriptionsStat: "Subscriptions",
+    deadlinesStat: "Deadlines",
+    meetingsStat: "Meetings",
+    german: "German",
+    english: "English",
+    unknown: "Unknown",
+    yes: "Yes",
+    no: "No",
+    mockLabel: "mock",
+    noPreview: "No preview available.",
+    savedSummary: "Saved summary",
+    structuredExtraction: "Structured extraction",
+    artifactBackedUi: "Artifact-backed UI",
+    guardrails: "Guardrails",
+    nextStep: "Next step",
+    savedSummaryDetail: (date, count) => `Loaded summary.json for ${date} with ${count} important emails.`,
+    structuredExtractionDetail: (deadlines, meetings, subscriptions) =>
+      `Saved ${deadlines} deadline signals, ${meetings} meeting signals, and ${subscriptions} subscription signals as first-class artifacts.`,
+    artifactBackedUiDetail: "This dashboard reflects real persisted outputs from the Python workflow.",
+    guardrailsDetail: (fallbacks, abstained) =>
+      fallbacks > 0
+        ? `Guardrails replaced ${fallbacks} low-confidence classifications and tracked ${abstained} abstentions.`
+        : "No low-confidence classifications needed fallback in this run.",
+    nextStepDetail: "Add token, cost, and latency telemetry to the saved run metadata.",
+    calmerBrief: "A calmer daily brief, centered on the few things worth your attention.",
+    guardrailsBrief: (count) =>
+      `Guardrails replaced ${count} low-confidence classifications with safer fallback logic.`,
+    likelyRecurringFallback: "Likely recurring subscription signal detected.",
+    noMeetingDetails: "No additional meeting details extracted.",
+    responseLikelyNeeded: "Response likely needed",
+    noDueHint: "No explicit due hint found.",
+    heuristicOrFallback: "Heuristic or fallback",
+    llmAssisted: "LLM-assisted",
+  },
+  de: {
+    loadingKicker: "Laden",
+    loadingTitle: "Laufartefakte werden geladen...",
+    frontendKicker: "Frontend",
+    loadErrorTitle: "Gespeicherte Laeufe konnten nicht geladen werden",
+    noDataKicker: "Noch keine Daten",
+    noDataTitle: "Starte den Email-Agenten zuerst",
+    noDataBody: "Gespeicherte Zusammenfassungen aus data/runs/ erscheinen hier automatisch.",
+    livePill: "Uebersicht",
+    signalLabel: "Tageszusammenfassung",
+    hideDetails: "Details ausblenden",
+    showDetails: "Details anzeigen",
+    savedRun: "Gespeicherter Lauf",
+    inspector: "Inspektor",
+    technicalMetadata: "Technische Metadaten",
+    provider: "Quelle",
+    language: "Sprache",
+    llm: "LLM",
+    execution: "Ausfuehrung",
+    emailCount: "E-Mail-Anzahl",
+    importantCount: "Wichtige E-Mails",
+    llmClassification: "LLM-Klassifizierung",
+    llmSummary: "LLM-Zusammenfassung",
+    classificationRoute: "Klassifizierungsweg",
+    summaryRoute: "Zusammenfassungsweg",
+    lowConfidenceItems: "Unsichere Eintraege",
+    abstainedItems: "Enthaltungen",
+    llmFallbacks: "LLM-Fallbacks",
+    inboxFocus: "Posteingang",
+    importantMessages: "Wichtige Nachrichten",
+    actionBoard: "Naechste Schritte",
+    nextSteps: "Naechste Schritte",
+    noFollowup: "Fuer diesen Lauf wurden keine Folgeaktionen erkannt.",
+    deadlines: "Fristen",
+    timeSensitiveItems: "Zeitkritische Punkte",
+    noDeadlines: "Fuer diesen Lauf wurden keine klaren Fristsignale erkannt.",
+    meetings: "Besprechungen",
+    calendarSignals: "Kalendersignale",
+    noMeetings: "Es wurden keine Besprechungs- oder Planungssignale erkannt.",
+    subscriptions: "Abos",
+    recurringCharges: "Wiederkehrende Kosten",
+    noSubscriptions: "Fuer diesen Lauf wurden keine wahrscheinlichen Abos erkannt.",
+    workflow: "Ablauf",
+    systemPath: "Systempfad",
+    hide: "Ausblenden",
+    view: "Anzeigen",
+    workflowSummary: "Eine kompakte Systemansicht ist verfuegbar, wenn du den Ablauf genauer ansehen willst.",
+    whyThisMatters: "Warum das wichtig ist",
+    projectValue: "Projektwert",
+    projectSummary: "Die Oberflaeche bleibt bewusst produktnah, waehrend die technische Sicht bei Bedarf verfuegbar ist.",
+    projectBullet1: "Echte Gmail-Laeufe und gespeicherte Artefakte treiben die Oberflaeche bereits an.",
+    projectBullet2: "Die Produktansicht bleibt ruhig, waehrend technische Metadaten gezielt verfuegbar bleiben.",
+    projectBullet3: "Als naechster Schritt bietet sich eine leichte API oder Live-Aktualisierung nach jedem Lauf an.",
+    importantMails: "Wichtige E-Mails",
+    subscriptionsStat: "Abos",
+    deadlinesStat: "Fristen",
+    meetingsStat: "Besprechungen",
+    german: "Deutsch",
+    english: "Englisch",
+    unknown: "Unbekannt",
+    yes: "Ja",
+    no: "Nein",
+    mockLabel: "mock",
+    noPreview: "Keine Vorschau verfuegbar.",
+    savedSummary: "Gespeicherte Zusammenfassung",
+    structuredExtraction: "Strukturierte Extraktion",
+    artifactBackedUi: "Artefaktgestuetzte Oberflaeche",
+    guardrails: "Guardrails",
+    nextStep: "Naechster Schritt",
+    savedSummaryDetail: (date, count) => `summary.json fuer ${date} mit ${count} wichtigen E-Mails geladen.`,
+    structuredExtractionDetail: (deadlines, meetings, subscriptions) =>
+      `${deadlines} Fristsignale, ${meetings} Besprechungssignale und ${subscriptions} Abo-Signale als eigene Artefakte gespeichert.`,
+    artifactBackedUiDetail: "Dieses Dashboard zeigt echte gespeicherte Ausgaben aus dem Python-Workflow.",
+    guardrailsDetail: (fallbacks, abstained) =>
+      fallbacks > 0
+        ? `Guardrails haben ${fallbacks} unsichere Klassifizierungen durch sicherere Fallback-Logik ersetzt und ${abstained} Enthaltungen erfasst.`
+        : "In diesem Lauf waren keine Fallbacks fuer unsichere Klassifizierungen noetig.",
+    nextStepDetail: "Token-, Kosten- und Latenztelemetrie in die gespeicherten Laufmetadaten aufnehmen.",
+    calmerBrief: "Ein ruhiger Tagesbrief, fokussiert auf die wenigen Dinge, die wirklich Aufmerksamkeit brauchen.",
+    guardrailsBrief: (count) =>
+      `Guardrails haben ${count} unsichere Klassifizierungen durch sicherere Fallback-Logik ersetzt.`,
+    likelyRecurringFallback: "Wahrscheinliches Signal fuer ein wiederkehrendes Abo erkannt.",
+    noMeetingDetails: "Keine weiteren Besprechungsdetails erkannt.",
+    responseLikelyNeeded: "Antwort wahrscheinlich noetig",
+    noDueHint: "Keine ausdrueckliche Frist erkannt.",
+    heuristicOrFallback: "Heuristik oder Fallback",
+    llmAssisted: "LLM-gestuetzt",
+  },
+};
+
 function App() {
   const [runs, setRuns] = useState([]);
   const [selectedRunDate, setSelectedRunDate] = useState("");
@@ -84,13 +263,14 @@ function App() {
   }
 
   const dashboardData = useMemo(() => buildDashboardData(runData), [runData]);
+  const ui = dashboardData?.ui ?? UI_TEXT.en;
 
   if (loading && !runData) {
     return (
       <div className="page-shell">
         <div className="panel empty-state">
           <span className="section-kicker">Loading</span>
-          <h2>Loading run artifacts...</h2>
+          <h2>{ui.loadingTitle}</h2>
         </div>
       </div>
     );
@@ -100,8 +280,8 @@ function App() {
     return (
       <div className="page-shell">
         <div className="panel empty-state">
-          <span className="section-kicker">Frontend</span>
-          <h2>Could not load saved runs</h2>
+          <span className="section-kicker">{ui.frontendKicker}</span>
+          <h2>{ui.loadErrorTitle}</h2>
           <p>{error}</p>
         </div>
       </div>
@@ -112,9 +292,9 @@ function App() {
     return (
       <div className="page-shell">
         <div className="panel empty-state">
-          <span className="section-kicker">No data yet</span>
-          <h2>Run the email agent first</h2>
-          <p>Saved summaries from <code>data/runs/</code> will appear here automatically.</p>
+          <span className="section-kicker">{ui.noDataKicker}</span>
+          <h2>{ui.noDataTitle}</h2>
+          <p>{ui.noDataBody}</p>
         </div>
       </div>
     );
@@ -128,7 +308,7 @@ function App() {
       <header className="hero-card">
         <div className="eyebrow-row">
           <span className="eyebrow">Email Agent</span>
-          <span className="live-pill">Run dashboard</span>
+          <span className="live-pill">{ui.livePill}</span>
         </div>
 
         <div className="hero-grid">
@@ -145,7 +325,7 @@ function App() {
           <div className="signal-card">
             <div className="signal-topline">
               <div>
-                <div className="signal-label">Daily summary</div>
+                <div className="signal-label">{ui.signalLabel}</div>
                 <div className="signal-date">{dashboardData.dateLabel}</div>
               </div>
               <button
@@ -153,15 +333,15 @@ function App() {
                 className="inspector-toggle"
                 onClick={() => setShowInspector((current) => !current)}
               >
-                {showInspector ? "Hide details" : "Show details"}
+                {showInspector ? ui.hideDetails : ui.showDetails}
               </button>
             </div>
             <label className="run-picker">
-              <span>Saved run</span>
+              <span>{ui.savedRun}</span>
               <select value={selectedRunDate} onChange={handleRunChange}>
                 {runs.map((run) => (
                   <option key={run.date} value={run.date}>
-                    {run.date} {run.isMock ? "(mock)" : `(${run.provider})`}
+                    {run.date} {run.isMock ? `(${ui.mockLabel})` : `(${run.provider})`}
                   </option>
                 ))}
               </select>
@@ -175,61 +355,61 @@ function App() {
             {showInspector ? (
               <div className="inspector-card">
                 <div className="inspector-header">
-                  <span className="section-kicker">Inspector</span>
-                  <span className="inspector-note">Technical metadata</span>
+                  <span className="section-kicker">{ui.inspector}</span>
+                  <span className="inspector-note">{ui.technicalMetadata}</span>
                 </div>
 
                 <dl className="meta-grid">
                   <div>
-                    <dt>Provider</dt>
+                    <dt>{ui.provider}</dt>
                     <dd>{dashboardData.provider}</dd>
                   </div>
                   <div>
-                    <dt>Language</dt>
+                    <dt>{ui.language}</dt>
                     <dd>{dashboardData.language}</dd>
                   </div>
                   <div>
-                    <dt>LLM</dt>
+                    <dt>{ui.llm}</dt>
                     <dd>{dashboardData.llmProvider}</dd>
                   </div>
                   <div>
-                    <dt>Execution</dt>
+                    <dt>{ui.execution}</dt>
                     <dd>{dashboardData.executionMode}</dd>
                   </div>
                   <div>
-                    <dt>Email count</dt>
+                    <dt>{ui.emailCount}</dt>
                     <dd>{dashboardData.metadata.emailCount}</dd>
                   </div>
                   <div>
-                    <dt>Important count</dt>
+                    <dt>{ui.importantCount}</dt>
                     <dd>{dashboardData.metadata.importantEmailCount}</dd>
                   </div>
                   <div>
-                    <dt>LLM classification</dt>
+                    <dt>{ui.llmClassification}</dt>
                     <dd>{dashboardData.metadata.llmClassificationEnabled}</dd>
                   </div>
                   <div>
-                    <dt>LLM summary</dt>
+                    <dt>{ui.llmSummary}</dt>
                     <dd>{dashboardData.metadata.llmSummaryEnabled}</dd>
                   </div>
                   <div>
-                    <dt>Classification route</dt>
+                    <dt>{ui.classificationRoute}</dt>
                     <dd>{dashboardData.metadata.classificationMode}</dd>
                   </div>
                   <div>
-                    <dt>Summary route</dt>
+                    <dt>{ui.summaryRoute}</dt>
                     <dd>{dashboardData.metadata.summaryMode}</dd>
                   </div>
                   <div>
-                    <dt>Low-confidence items</dt>
+                    <dt>{ui.lowConfidenceItems}</dt>
                     <dd>{dashboardData.metadata.uncertainAssessmentCount}</dd>
                   </div>
                   <div>
-                    <dt>Abstained items</dt>
+                    <dt>{ui.abstainedItems}</dt>
                     <dd>{dashboardData.metadata.abstainedAssessmentCount}</dd>
                   </div>
                   <div>
-                    <dt>LLM fallbacks</dt>
+                    <dt>{ui.llmFallbacks}</dt>
                     <dd>{dashboardData.metadata.llmFallbackCount}</dd>
                   </div>
                 </dl>
@@ -252,8 +432,8 @@ function App() {
         <section className="panel panel-wide">
           <div className="panel-heading">
             <div>
-              <span className="section-kicker">Inbox focus</span>
-              <h2>Important messages</h2>
+              <span className="section-kicker">{ui.inboxFocus}</span>
+              <h2>{ui.importantMessages}</h2>
             </div>
             <span className="section-chip">{dashboardData.dateBadge}</span>
           </div>
@@ -275,8 +455,8 @@ function App() {
         <section className="panel">
           <div className="panel-heading">
             <div>
-              <span className="section-kicker">Action board</span>
-              <h2>Next steps</h2>
+              <span className="section-kicker">{ui.actionBoard}</span>
+              <h2>{ui.nextSteps}</h2>
             </div>
           </div>
 
@@ -287,15 +467,15 @@ function App() {
               ))}
             </ol>
           ) : (
-            <p className="panel-summary">No follow-up actions were extracted for this run.</p>
+            <p className="panel-summary">{ui.noFollowup}</p>
           )}
         </section>
 
         <section className="panel">
           <div className="panel-heading">
             <div>
-              <span className="section-kicker">Deadlines</span>
-              <h2>Time-sensitive items</h2>
+              <span className="section-kicker">{ui.deadlines}</span>
+              <h2>{ui.timeSensitiveItems}</h2>
             </div>
           </div>
 
@@ -304,20 +484,20 @@ function App() {
               {dashboardData.deadlines.map((item) => (
                 <li key={`${item.sourceEmailId}-${item.description}`}>
                   <strong>{item.description}</strong>
-                  <span>{item.dueHint || "No explicit due hint found."}</span>
+                  <span>{item.dueHint || ui.noDueHint}</span>
                 </li>
               ))}
             </ul>
           ) : (
-            <p className="panel-summary">No explicit deadline signals were extracted for this run.</p>
+            <p className="panel-summary">{ui.noDeadlines}</p>
           )}
         </section>
 
         <section className="panel">
           <div className="panel-heading">
             <div>
-              <span className="section-kicker">Meetings</span>
-              <h2>Calendar signals</h2>
+              <span className="section-kicker">{ui.meetings}</span>
+              <h2>{ui.calendarSignals}</h2>
             </div>
           </div>
 
@@ -326,20 +506,20 @@ function App() {
               {dashboardData.meetings.map((item) => (
                 <li key={`${item.sourceEmailId}-${item.title}`}>
                   <strong>{item.title}</strong>
-                  <span>{formatMeetingDetail(item)}</span>
+                  <span>{formatMeetingDetail(item, ui)}</span>
                 </li>
               ))}
             </ul>
           ) : (
-            <p className="panel-summary">No meeting invitations or scheduling signals were extracted.</p>
+            <p className="panel-summary">{ui.noMeetings}</p>
           )}
         </section>
 
         <section className="panel">
           <div className="panel-heading">
             <div>
-              <span className="section-kicker">Subscriptions</span>
-              <h2>Recurring charges</h2>
+              <span className="section-kicker">{ui.subscriptions}</span>
+              <h2>{ui.recurringCharges}</h2>
             </div>
           </div>
 
@@ -348,33 +528,31 @@ function App() {
               {dashboardData.subscriptions.map((item) => (
                 <li key={`${item.sourceEmailId}-${item.serviceName}`}>
                   <strong>{item.serviceName}</strong>
-                  <span>{formatSubscriptionDetail(item)}</span>
+                  <span>{formatSubscriptionDetail(item, ui)}</span>
                 </li>
               ))}
             </ul>
           ) : (
-            <p className="panel-summary">No likely recurring subscriptions were extracted for this run.</p>
+            <p className="panel-summary">{ui.noSubscriptions}</p>
           )}
         </section>
 
         <section className="panel">
           <div className="panel-heading">
             <div>
-              <span className="section-kicker">Workflow</span>
-              <h2>System path</h2>
+              <span className="section-kicker">{ui.workflow}</span>
+              <h2>{ui.systemPath}</h2>
             </div>
             <button
               type="button"
               className="section-toggle"
               onClick={() => setShowSystemPath((current) => !current)}
             >
-              {showSystemPath ? "Hide" : "View"}
+              {showSystemPath ? ui.hide : ui.view}
             </button>
           </div>
 
-          <p className="panel-summary">
-            A compact system overview is available when you want to inspect the workflow path.
-          </p>
+          <p className="panel-summary">{ui.workflowSummary}</p>
 
           {showSystemPath ? (
             <div className="details-drawer">
@@ -396,28 +574,26 @@ function App() {
         <section className="panel">
           <div className="panel-heading">
             <div>
-              <span className="section-kicker">Why this matters</span>
-              <h2>Project value</h2>
+              <span className="section-kicker">{ui.whyThisMatters}</span>
+              <h2>{ui.projectValue}</h2>
             </div>
             <button
               type="button"
               className="section-toggle"
               onClick={() => setShowProjectValue((current) => !current)}
             >
-              {showProjectValue ? "Hide" : "View"}
+              {showProjectValue ? ui.hide : ui.view}
             </button>
           </div>
 
-          <p className="panel-summary">
-            The interface is intentionally product-first, while the engineering story stays available on demand.
-          </p>
+          <p className="panel-summary">{ui.projectSummary}</p>
 
           {showProjectValue ? (
             <div className="details-drawer">
               <ul className="story-list">
-                <li>Real Gmail runs and saved artifacts already drive the interface.</li>
-                <li>The product view stays clean while technical metadata remains accessible on demand.</li>
-                <li>The next step could be a lightweight API or live refresh after each summary run.</li>
+                <li>{ui.projectBullet1}</li>
+                <li>{ui.projectBullet2}</li>
+                <li>{ui.projectBullet3}</li>
               </ul>
             </div>
           ) : null}
@@ -444,26 +620,29 @@ function buildDashboardData(runData) {
   const importantEmails = emails.filter((email) => importantIds.has(email.id));
   const assessmentMap = new Map(assessments.map((item) => [item.email_id, item]));
   const provider = runMetadata?.provider ?? importantEmails[0]?.source ?? emails[0]?.source ?? "unknown";
-  const language = summary.language === "de" ? "German" : "English";
+  const locale = summary.language === "de" ? "de" : "en";
+  const ui = UI_TEXT[locale];
+  const language = locale === "de" ? ui.german : ui.english;
 
   return {
+    ui,
     headline: summary.headline,
     overview: summary.overview,
     keyTakeaway:
       (runMetadata?.llm_fallback_count ?? 0) > 0
-        ? `Guardrails replaced ${runMetadata?.llm_fallback_count ?? 0} low-confidence classifications with safer fallback logic.`
-        : "A calmer daily brief, centered on the few things worth your attention.",
-    dateLabel: formatDate(date),
+        ? ui.guardrailsBrief(runMetadata?.llm_fallback_count ?? 0)
+        : ui.calmerBrief,
+    dateLabel: formatDate(date, locale),
     dateBadge: date,
     provider: provider.toUpperCase(),
     language,
-    llmProvider: runMetadata?.llm_provider ?? "Unknown",
-    executionMode: formatMode(runMetadata?.summary_mode) ?? detectExecutionMode(summary, assessments),
+    llmProvider: runMetadata?.llm_provider ?? ui.unknown,
+    executionMode: formatMode(runMetadata?.summary_mode, ui) ?? detectExecutionMode(summary, assessments, ui),
     stats: [
-      { label: "Important mails", value: String(summary.important_email_ids.length), tone: "coral" },
-      { label: "Subscriptions", value: String(subscriptions.length), tone: "gold" },
-      { label: "Deadlines", value: String(deadlines.length), tone: "teal" },
-      { label: "Meetings", value: String(meetings.length), tone: "blue" },
+      { label: ui.importantMails, value: String(summary.important_email_ids.length), tone: "coral" },
+      { label: ui.subscriptionsStat, value: String(subscriptions.length), tone: "gold" },
+      { label: ui.deadlinesStat, value: String(deadlines.length), tone: "teal" },
+      { label: ui.meetingsStat, value: String(meetings.length), tone: "blue" },
     ],
     actions: summary.action_items.map((item) => item.description),
     deadlines: deadlines.map((item) => ({
@@ -489,45 +668,45 @@ function buildDashboardData(runData) {
       sender: email.sender,
       subject: email.subject,
       tag: formatLabel(assessmentMap.get(email.id)?.label ?? "info"),
-      summary: email.snippet || email.body_preview || "No preview available.",
+      summary: email.snippet || email.body_preview || ui.noPreview,
     })),
     timeline: [
       {
-        title: "Saved summary",
-        detail: `Loaded summary.json for ${date} with ${summary.important_email_ids.length} important emails.`,
+        title: ui.savedSummary,
+        detail: ui.savedSummaryDetail(date, summary.important_email_ids.length),
         status: "completed",
       },
       {
-        title: "Structured extraction",
-        detail: `Saved ${deadlines.length} deadline signals, ${meetings.length} meeting signals, and ${subscriptions.length} subscription signals as first-class artifacts.`,
+        title: ui.structuredExtraction,
+        detail: ui.structuredExtractionDetail(deadlines.length, meetings.length, subscriptions.length),
         status: "completed",
       },
       {
-        title: "Artifact-backed UI",
-        detail: "This dashboard reflects real persisted outputs from the Python workflow.",
+        title: ui.artifactBackedUi,
+        detail: ui.artifactBackedUiDetail,
         status: "completed",
       },
       {
-        title: "Guardrails",
-        detail:
-          (runMetadata?.llm_fallback_count ?? 0) > 0
-            ? `Guardrails replaced ${runMetadata?.llm_fallback_count ?? 0} low-confidence classifications and tracked ${runMetadata?.abstained_assessment_count ?? 0} abstentions.`
-            : "No low-confidence classifications needed fallback in this run.",
+        title: ui.guardrails,
+        detail: ui.guardrailsDetail(
+          runMetadata?.llm_fallback_count ?? 0,
+          runMetadata?.abstained_assessment_count ?? 0,
+        ),
         status: "completed",
       },
       {
-        title: "Next step",
-        detail: "Add token, cost, and latency telemetry to the saved run metadata.",
+        title: ui.nextStep,
+        detail: ui.nextStepDetail,
         status: "next",
       },
     ],
     metadata: {
       emailCount: runMetadata?.email_count ?? emails.length,
       importantEmailCount: runMetadata?.important_email_count ?? summary.important_email_ids.length,
-      llmClassificationEnabled: yesNo(runMetadata?.llm_classification_enabled),
-      llmSummaryEnabled: yesNo(runMetadata?.llm_summary_enabled),
-      classificationMode: formatMode(runMetadata?.classification_mode),
-      summaryMode: formatMode(runMetadata?.summary_mode),
+      llmClassificationEnabled: yesNo(runMetadata?.llm_classification_enabled, ui),
+      llmSummaryEnabled: yesNo(runMetadata?.llm_summary_enabled, ui),
+      classificationMode: formatMode(runMetadata?.classification_mode, ui),
+      summaryMode: formatMode(runMetadata?.summary_mode, ui),
       uncertainAssessmentCount: runMetadata?.uncertain_assessment_count ?? 0,
       abstainedAssessmentCount: runMetadata?.abstained_assessment_count ?? 0,
       llmFallbackCount: runMetadata?.llm_fallback_count ?? 0,
@@ -535,9 +714,10 @@ function buildDashboardData(runData) {
   };
 }
 
-function formatDate(date) {
+function formatDate(date, locale) {
   const parsed = new Date(`${date}T12:00:00`);
-  return new Intl.DateTimeFormat("en-US", {
+  const formatterLocale = locale === "de" ? "de-DE" : "en-US";
+  return new Intl.DateTimeFormat(formatterLocale, {
     weekday: "long",
     month: "long",
     day: "numeric",
@@ -548,7 +728,7 @@ function formatLabel(label) {
   return label.replace(/_/g, " ");
 }
 
-function detectExecutionMode(summary, assessments) {
+function detectExecutionMode(summary, assessments, ui) {
   if (summary.headline && summary.overview) {
     const heuristicReasons = assessments.every((item) =>
       [
@@ -560,33 +740,41 @@ function detectExecutionMode(summary, assessments) {
         "No strong signal of importance.",
       ].includes(item.reason),
     );
-    return heuristicReasons ? "Heuristic or fallback" : "LLM-assisted";
+    return heuristicReasons ? ui.heuristicOrFallback : ui.llmAssisted;
   }
 
-  return "Unknown";
+  return ui.unknown;
 }
 
-function formatMode(value) {
+function formatMode(value, ui) {
   if (!value) {
-    return "Unknown";
+    return ui.unknown;
   }
 
-  return value.replace(/_/g, " ");
+  const normalized = value.toLowerCase();
+  const modeMap = {
+    heuristic: ui.heuristicOrFallback,
+    heuristic_fallback: ui.heuristicOrFallback,
+    llm: "LLM",
+    llm_guardrailed: "LLM + Guardrails",
+    llm_assisted: ui.llmAssisted,
+  };
+  return modeMap[normalized] ?? value.replace(/_/g, " ");
 }
 
-function yesNo(value) {
-  return value ? "Yes" : "No";
+function yesNo(value, ui) {
+  return value ? ui.yes : ui.no;
 }
 
-function formatMeetingDetail(item) {
+function formatMeetingDetail(item, ui) {
   const parts = [item.whenHint, item.locationHint].filter(Boolean);
   if (item.needsResponse) {
-    parts.push("Response likely needed");
+    parts.push(ui.responseLikelyNeeded);
   }
-  return parts.join(" · ") || "No additional meeting details extracted.";
+  return parts.join(" · ") || ui.noMeetingDetails;
 }
 
-function formatSubscriptionDetail(item) {
+function formatSubscriptionDetail(item, ui) {
   const parts = [item.renewalHint, item.amountHint, item.cancellationHint].filter(Boolean);
-  return parts.join(" · ") || "Likely recurring subscription signal detected.";
+  return parts.join(" · ") || ui.likelyRecurringFallback;
 }
