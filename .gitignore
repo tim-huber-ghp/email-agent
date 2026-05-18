@@ -19,3 +19,6 @@ node_modules/
 frontend/dist/
 coverage.xml
 .coverage
+agents.md
+ai-roadmap.md
+production-readiness.md

@@ -325,14 +325,6 @@ This gives a compact but strong walkthrough of:
 - evaluation
 - frontend presentation
 
-## Roadmap
-
-Key planning docs:
-
-- [agents.md](./agents.md)
-- [ai-roadmap.md](./ai-roadmap.md)
-- [production-readiness.md](./production-readiness.md)
-
 ## CV-Style Summary
 
 Suggested one-line description:
