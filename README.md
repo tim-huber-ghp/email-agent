@@ -17,8 +17,6 @@ This project is designed as a small but credible AI product:
 - evaluation on synthetic and anonymized real-email datasets
 - React frontend backed by persisted run artifacts
 
-The goal is not “chat with your inbox.” The goal is a reliable daily brief that is easy to inspect, evaluate, and explain.
-
 ## Current Features
 
 - Gmail read-only integration via Google OAuth
@@ -324,9 +322,3 @@ This gives a compact but strong walkthrough of:
 - AI + heuristics tradeoffs
 - evaluation
 - frontend presentation
-
-## CV-Style Summary
-
-Suggested one-line description:
-
-> Built an end-to-end Gmail email summary agent with LangGraph orchestration, hybrid heuristic/LLM processing, structured extraction, evaluation on real and synthetic datasets, and a React dashboard backed by persisted run artifacts.
