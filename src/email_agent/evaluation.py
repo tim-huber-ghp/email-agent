@@ -3,14 +3,18 @@
 from __future__ import annotations
 
 import json
-from pathlib import Path
 import re
+from pathlib import Path
 
 from pydantic import BaseModel, Field
 
 from email_agent.config import Settings
 from email_agent.models.email import EmailAssessment, ImportanceLabel, NormalizedEmail, RawEmail
-from email_agent.services.extraction import extract_deadlines, extract_meetings, extract_subscriptions
+from email_agent.services.extraction import (
+    extract_deadlines,
+    extract_meetings,
+    extract_subscriptions,
+)
 from email_agent.services.importance import assess_email
 from email_agent.services.llm import classify_emails_with_llm, llm_classification_enabled
 
@@ -163,7 +167,9 @@ def save_evaluation_reports(reports: list[EvaluationReport], output_dir: Path) -
     output_dir.mkdir(parents=True, exist_ok=True)
     saved_paths: list[Path] = []
     for report in reports:
-        saved_paths.append(save_evaluation_report(report, output_dir / f"{report.strategy}_report.json"))
+        saved_paths.append(
+            save_evaluation_report(report, output_dir / f"{report.strategy}_report.json")
+        )
     return saved_paths
 
 
@@ -173,7 +179,9 @@ def export_real_email_drafts(
 ) -> Path:
     """Write anonymized Gmail examples with heuristic suggestions for manual labeling."""
 
-    normalized_emails = [_raw_email_to_email(raw_email, index) for index, raw_email in enumerate(raw_emails, start=1)]
+    normalized_emails = [
+        _raw_email_to_email(raw_email, index) for index, raw_email in enumerate(raw_emails, start=1)
+    ]
     assessments = [assess_email(email) for email in normalized_emails]
     deadlines = extract_deadlines(normalized_emails, assessments, language="en")
     meetings = extract_meetings(normalized_emails, assessments)
@@ -205,7 +213,9 @@ def export_real_email_drafts(
 
     output_path.parent.mkdir(parents=True, exist_ok=True)
     output_path.write_text(
-        json.dumps([draft.model_dump(mode="json") for draft in drafts], indent=2, ensure_ascii=False),
+        json.dumps(
+            [draft.model_dump(mode="json") for draft in drafts], indent=2, ensure_ascii=False
+        ),
         encoding="utf-8",
     )
     return output_path
@@ -262,7 +272,9 @@ def finalize_real_email_dataset(
 
     output_path.parent.mkdir(parents=True, exist_ok=True)
     output_path.write_text(
-        json.dumps([example.model_dump(mode="json") for example in examples], indent=2, ensure_ascii=False),
+        json.dumps(
+            [example.model_dump(mode="json") for example in examples], indent=2, ensure_ascii=False
+        ),
         encoding="utf-8",
     )
     return output_path

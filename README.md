@@ -255,7 +255,7 @@ make finalize-real-eval
 
 ```bash
 .venv/bin/python -m email_agent.cli.main evaluate \
-  --dataset data/eval/labeled_emails_real_2026-05-12.json \
+  --dataset data/eval/labeled_emails_real_<YYYY-MM-DD>.json \
   --mode both
 ```
 

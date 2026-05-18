@@ -1,7 +1,11 @@
 from datetime import datetime
 
 from email_agent.models.email import EmailAssessment, NormalizedEmail
-from email_agent.services.extraction import extract_deadlines, extract_meetings, extract_subscriptions
+from email_agent.services.extraction import (
+    extract_deadlines,
+    extract_meetings,
+    extract_subscriptions,
+)
 
 
 def _email(

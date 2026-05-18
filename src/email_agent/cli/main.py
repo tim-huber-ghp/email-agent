@@ -1,20 +1,8 @@
 """CLI entrypoint."""
 
+import warnings
 from datetime import date
 from pathlib import Path
-import warnings
-
-try:
-    from langchain_core._api.deprecation import LangChainPendingDeprecationWarning
-except Exception:  # pragma: no cover - defensive import fallback
-    LangChainPendingDeprecationWarning = Warning
-
-warnings.filterwarnings(
-    "ignore",
-    message=r"The default value of `allowed_objects` will change in a future version\..*",
-    category=LangChainPendingDeprecationWarning,
-    module=r"langgraph\.cache\.base(\..*)?",
-)
 
 import typer
 
@@ -29,10 +17,22 @@ from email_agent.evaluation import (
     save_evaluation_report,
     save_evaluation_reports,
 )
-from email_agent.graph.workflow import run_workflow
-from email_agent.providers.gmail import GmailProvider
 
 app = typer.Typer(help="Email summary agent CLI.", no_args_is_help=True)
+
+
+def _suppress_langgraph_cache_warning() -> None:
+    try:
+        from langchain_core._api.deprecation import LangChainPendingDeprecationWarning
+    except Exception:  # pragma: no cover - defensive import fallback
+        LangChainPendingDeprecationWarning = Warning
+
+    warnings.filterwarnings(
+        "ignore",
+        message=r"The default value of `allowed_objects` will change in a future version\..*",
+        category=LangChainPendingDeprecationWarning,
+        module=r"langgraph\.cache\.base(\..*)?",
+    )
 
 
 def _label(english: str, german: str, is_german: bool) -> str:
@@ -50,6 +50,9 @@ def summarize(
     provider: str = typer.Option("mock", help="Email provider to use: mock or gmail."),
 ) -> None:
     """Run the summary flow."""
+
+    _suppress_langgraph_cache_warning()
+    from email_agent.graph.workflow import run_workflow
 
     settings = get_settings()
     target_date = run_date or date.today().isoformat()
@@ -115,6 +118,8 @@ def summarize(
 def gmail_auth() -> None:
     """Run Gmail desktop OAuth and save the token locally."""
 
+    from email_agent.providers.gmail import GmailProvider
+
     settings = get_settings()
     is_german = settings.language == "de"
     token_path = GmailProvider(settings).authenticate()
@@ -144,7 +149,9 @@ def evaluate(
     output_dir = settings.data_dir / "eval" / "reports"
 
     if len(reports) == 1:
-        output_paths = [save_evaluation_report(reports[0], output_dir / f"{reports[0].strategy}_report.json")]
+        output_paths = [
+            save_evaluation_report(reports[0], output_dir / f"{reports[0].strategy}_report.json")
+        ]
     else:
         output_paths = save_evaluation_reports(reports, output_dir)
 
@@ -159,7 +166,9 @@ def evaluate(
             f"{_label('Label accuracy', 'Label-Genauigkeit', is_german)}: "
             f"{report.label_accuracy:.3f}"
         )
-        _print_metric(_label("Important email", "Wichtige E-Mails", is_german), report.important_email)
+        _print_metric(
+            _label("Important email", "Wichtige E-Mails", is_german), report.important_email
+        )
         _print_metric(_label("Needs action", "Aktion noetig", is_german), report.needs_action)
         _print_metric(_label("Deadlines", "Fristen", is_german), report.deadline_extraction)
         _print_metric(_label("Meetings", "Besprechungen", is_german), report.meeting_extraction)
@@ -195,6 +204,8 @@ def prepare_real_eval(
 ) -> None:
     """Export anonymized Gmail examples into a draft evaluation dataset."""
 
+    from email_agent.providers.gmail import GmailProvider
+
     settings = get_settings()
     is_german = settings.language == "de"
     target_date = run_date or date.today().isoformat()
@@ -204,7 +215,9 @@ def prepare_real_eval(
     if output:
         output_path = Path(output)
     else:
-        output_path = settings.data_dir / "eval" / "drafts" / f"real_email_candidates_{target_date}.json"
+        output_path = (
+            settings.data_dir / "eval" / "drafts" / f"real_email_candidates_{target_date}.json"
+        )
 
     saved_path = export_real_email_drafts(raw_emails, output_path)
 
@@ -248,9 +261,7 @@ def finalize_real_eval(
 
     saved_path = finalize_real_email_dataset(draft_path, output_path)
 
-    typer.echo(
-        f"{_label('Reviewed draft', 'Gepruefter Entwurf', is_german)}: {draft_path}"
-    )
+    typer.echo(f"{_label('Reviewed draft', 'Gepruefter Entwurf', is_german)}: {draft_path}")
     typer.echo(
         f"{_label('Saved finalized dataset to', 'Finalen Datensatz gespeichert unter', is_german)}: "
         f"{saved_path}"
@@ -273,7 +284,9 @@ def _print_metric(label: str, metric: object) -> None:
     )
 
 
-def _run_evaluation_mode(mode: str, dataset_path: Path, settings: Settings) -> list[EvaluationReport]:
+def _run_evaluation_mode(
+    mode: str, dataset_path: Path, settings: Settings
+) -> list[EvaluationReport]:
     normalized_mode = mode.lower()
     if normalized_mode == "heuristic":
         return [run_heuristic_evaluation(dataset_path)]

@@ -35,7 +35,10 @@ def test_extract_body_text_falls_back_to_html_when_plain_text_missing() -> None:
     payload = {
         "mimeType": "multipart/alternative",
         "parts": [
-            {"mimeType": "text/html", "body": {"data": _b64("<div>Meeting at <b>3 PM</b><br>Bring notes</div>")}},
+            {
+                "mimeType": "text/html",
+                "body": {"data": _b64("<div>Meeting at <b>3 PM</b><br>Bring notes</div>")},
+            },
         ],
     }
 

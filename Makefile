@@ -4,10 +4,10 @@ run-gmail:
 	.venv/bin/python -m email_agent.cli.main summarize --provider gmail
 
 run-mock:
-	.venv/bin/python -m email_agent.cli.main summarize --provider mock --run-date 2026-05-10
+	.venv/bin/python -m email_agent.cli.main summarize --provider mock
 
 run-mock-fast:
-	EMAIL_AGENT_USE_LLM=false .venv/bin/python -m email_agent.cli.main summarize --provider mock --run-date 2026-05-10
+	EMAIL_AGENT_USE_LLM=false .venv/bin/python -m email_agent.cli.main summarize --provider mock
 
 run-eval:
 	.venv/bin/python -m email_agent.cli.main evaluate
@@ -16,7 +16,7 @@ prepare-real-eval:
 	.venv/bin/python -m email_agent.cli.main prepare-real-eval
 
 finalize-real-eval:
-	.venv/bin/python -m email_agent.cli.main finalize-real-eval --draft data/eval/drafts/real_email_candidates_2026-05-12.json
+	@printf "Usage: .venv/bin/python -m email_agent.cli.main finalize-real-eval --draft data/eval/drafts/real_email_candidates_<YYYY-MM-DD>.json\n"
 
 frontend:
 	cd frontend && npm run dev

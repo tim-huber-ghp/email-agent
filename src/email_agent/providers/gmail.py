@@ -3,17 +3,17 @@
 from __future__ import annotations
 
 import base64
+import html
+import re
 from datetime import UTC, date, datetime, timedelta
 from email.utils import parseaddr
-import html
 from pathlib import Path
-import re
 
 from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
+from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import Resource, build
 from googleapiclient.errors import HttpError
-from google_auth_oauthlib.flow import InstalledAppFlow
 
 from email_agent.config import Settings
 from email_agent.models.email import RawEmail
@@ -193,7 +193,9 @@ def _format_sender(raw_sender: str) -> str:
 def _html_to_text(value: str) -> str:
     """Convert simple HTML email content into readable plain text."""
 
-    no_scripts = re.sub(r"<(script|style).*?>.*?</\\1>", " ", value, flags=re.IGNORECASE | re.DOTALL)
+    no_scripts = re.sub(
+        r"<(script|style).*?>.*?</\\1>", " ", value, flags=re.IGNORECASE | re.DOTALL
+    )
     with_breaks = re.sub(r"<br\\s*/?>", "\n", no_scripts, flags=re.IGNORECASE)
     with_blocks = re.sub(r"</(p|div|li|tr|h[1-6])>", "\n", with_breaks, flags=re.IGNORECASE)
     no_tags = re.sub(r"<[^>]+>", " ", with_blocks)

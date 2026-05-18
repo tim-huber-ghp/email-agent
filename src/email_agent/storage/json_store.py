@@ -36,8 +36,12 @@ def persist_run(
         run_dir / "assessments.json",
         [assessment.model_dump(mode="json") for assessment in assessments],
     )
-    _write_json(run_dir / "deadlines.json", [deadline.model_dump(mode="json") for deadline in deadlines])
-    _write_json(run_dir / "meetings.json", [meeting.model_dump(mode="json") for meeting in meetings])
+    _write_json(
+        run_dir / "deadlines.json", [deadline.model_dump(mode="json") for deadline in deadlines]
+    )
+    _write_json(
+        run_dir / "meetings.json", [meeting.model_dump(mode="json") for meeting in meetings]
+    )
     _write_json(
         run_dir / "subscriptions.json",
         [subscription.model_dump(mode="json") for subscription in subscriptions],

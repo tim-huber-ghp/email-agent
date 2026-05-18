@@ -1,6 +1,5 @@
-from pathlib import Path
-
 import json
+from pathlib import Path
 
 from email_agent.evaluation import (
     export_real_email_drafts,
@@ -75,34 +74,41 @@ def test_export_real_email_drafts_anonymizes_sensitive_fields(tmp_path: Path) ->
     assert "<phone>" in exported[0]["snippet"]
     assert "<link>" in exported[0]["snippet"]
     assert "<email>" in exported[0]["body_preview"]
-    assert exported[0]["heuristic_label"] in {"finance", "urgent", "meeting", "needs_reply", "info", "low_priority"}
+    assert exported[0]["heuristic_label"] in {
+        "finance",
+        "urgent",
+        "meeting",
+        "needs_reply",
+        "info",
+        "low_priority",
+    }
 
 
 def test_finalize_real_email_dataset_uses_reviewed_expected_fields(tmp_path: Path) -> None:
     draft_path = tmp_path / "draft.json"
     draft_path.write_text(
         json.dumps(
-          [
-            {
-              "id": "real-001",
-              "sender": "sender-001@example.com",
-              "subject": "Invoice reminder",
-              "received_at": "2026-05-12T09:00:00+00:00",
-              "snippet": "Please review your invoice.",
-              "body_preview": "Monthly subscription billing notice.",
-              "labels": ["inbox"],
-              "heuristic_label": "finance",
-              "heuristic_important": True,
-              "heuristic_needs_action": True,
-              "heuristic_deadline": False,
-              "heuristic_meeting": False,
-              "heuristic_subscription": True,
-              "expected_label": "info",
-              "expected_important": False,
-              "notes": "Manual override",
-            }
-          ],
-          ensure_ascii=False,
+            [
+                {
+                    "id": "real-001",
+                    "sender": "sender-001@example.com",
+                    "subject": "Invoice reminder",
+                    "received_at": "2026-05-12T09:00:00+00:00",
+                    "snippet": "Please review your invoice.",
+                    "body_preview": "Monthly subscription billing notice.",
+                    "labels": ["inbox"],
+                    "heuristic_label": "finance",
+                    "heuristic_important": True,
+                    "heuristic_needs_action": True,
+                    "heuristic_deadline": False,
+                    "heuristic_meeting": False,
+                    "heuristic_subscription": True,
+                    "expected_label": "info",
+                    "expected_important": False,
+                    "notes": "Manual override",
+                }
+            ],
+            ensure_ascii=False,
         ),
         encoding="utf-8",
     )

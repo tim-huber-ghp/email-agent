@@ -1,10 +1,12 @@
 from datetime import datetime
 
-from email_agent.services.importance import assess_email
 from email_agent.models.email import NormalizedEmail
+from email_agent.services.importance import assess_email
 
 
-def _email(subject: str, snippet: str, body_preview: str, labels: list[str] | None = None) -> NormalizedEmail:
+def _email(
+    subject: str, snippet: str, body_preview: str, labels: list[str] | None = None
+) -> NormalizedEmail:
     return NormalizedEmail(
         id="test-email",
         source="evaluation",

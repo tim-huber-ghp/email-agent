@@ -28,7 +28,15 @@ FINANCE_KEYWORDS = {
     "renewal",
     "plan",
 }
-FINANCE_STRONG_KEYWORDS = {"invoice", "payment", "receipt", "billing", "refund", "subscription", "charge"}
+FINANCE_STRONG_KEYWORDS = {
+    "invoice",
+    "payment",
+    "receipt",
+    "billing",
+    "refund",
+    "subscription",
+    "charge",
+}
 LOW_PRIORITY_HINTS = {
     "no rush",
     "optional",
@@ -78,7 +86,10 @@ def filter_low_value_emails(emails: list[NormalizedEmail]) -> list[NormalizedEma
     filtered: list[NormalizedEmail] = []
     for email in emails:
         haystack = _email_text(email)
-        if any(keyword in haystack for keyword in LOW_PRIORITY_KEYWORDS) and "important" not in haystack:
+        if (
+            any(keyword in haystack for keyword in LOW_PRIORITY_KEYWORDS)
+            and "important" not in haystack
+        ):
             continue
         filtered.append(email)
     return filtered
@@ -116,7 +127,9 @@ def assess_email(email: NormalizedEmail) -> EmailAssessment:
         }
     )
     promotions_label = "promotions" in haystack
-    optional_reply_signal = "no response required" in haystack or "no response is needed" in haystack
+    optional_reply_signal = (
+        "no response required" in haystack or "no response is needed" in haystack
+    )
 
     score = 20
     label = "info"
@@ -141,13 +154,17 @@ def assess_email(email: NormalizedEmail) -> EmailAssessment:
         reason = "Contains completed billing or cancellation information."
         needs_action = False
         confidence_score = 85
-    elif finance_signal and ("subscription" in haystack or "renew" in haystack or "billing" in haystack):
+    elif finance_signal and (
+        "subscription" in haystack or "renew" in haystack or "billing" in haystack
+    ):
         score = 85
         label = "finance"
         reason = "Contains subscription or billing-related keywords."
         needs_action = True
         confidence_score = 90
-    elif deadline_day_signal and ("send" in haystack or "need" in haystack or "deadline" in haystack):
+    elif deadline_day_signal and (
+        "send" in haystack or "need" in haystack or "deadline" in haystack
+    ):
         score = 90
         label = "urgent"
         reason = "Contains a concrete deadline that still requires follow-up."

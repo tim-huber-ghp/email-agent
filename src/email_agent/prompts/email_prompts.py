@@ -112,9 +112,7 @@ def summary_messages(
         )
 
     language_instruction = (
-        "Write the output in German."
-        if language == "de"
-        else "Write the output in English."
+        "Write the output in German." if language == "de" else "Write the output in English."
     )
     no_action_text = "- Keine" if language == "de" else "- None"
     action_text = "\n".join(f"- {item.description}" for item in action_items[:4]) or no_action_text
