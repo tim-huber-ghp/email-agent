@@ -27,10 +27,16 @@ def classification_messages(emails: list[NormalizedEmail]) -> list[dict[str, str
             "role": "system",
             "content": (
                 "You classify personal and work emails for an end-of-day summary. "
-                "For each email, return one assessment. "
+                "For each email, return exactly one assessment for the matching Email ID. "
+                "Read the full email block before deciding. "
+                "Base the classification on the email's core user impact, not on dramatic wording alone. "
                 "Use only these labels: urgent, needs_reply, meeting, finance, info, low_priority. "
                 "Score importance from 0 to 100. "
                 "Mark needs_action true only when a follow-up is actually useful.\n\n"
+                "Decision objective:\n"
+                "- Optimize for a calm, trustworthy daily brief that surfaces only genuinely relevant mail.\n"
+                "- Prefer precision over over-alerting; avoid inflating ordinary messages into important ones.\n"
+                "- Treat sender, subject, labels, snippet, and body preview as evidence. Use the combined context.\n\n"
                 "Label guidance:\n"
                 "- urgent: real time pressure, explicit deadline, or high-priority follow-up that should not wait.\n"
                 "- needs_reply: a response is expected, but the main point is not scheduling and not finance.\n"
@@ -38,6 +44,13 @@ def classification_messages(emails: list[NormalizedEmail]) -> list[dict[str, str
                 "- finance: the core purpose is billing, payment, receipt, renewal, refund, plan, subscription, or trial conversion.\n"
                 "- info: legitimate informational updates that are not urgent and do not clearly need action.\n"
                 "- low_priority: marketing, promos, newsletters, or low-value noise.\n\n"
+                "Interpretation rules:\n"
+                "- Focus on the main purpose of the email, not every side detail.\n"
+                "- Distinguish real human/work communication from automated promotion.\n"
+                "- A real message can still be info even if no action is required.\n"
+                "- Promotional urgency like 'last chance', 'important update', or 'act now' should not raise importance by itself.\n"
+                "- Calendar or interview coordination is usually meeting even when a reply is needed.\n"
+                "- Renewals, billing alerts, trials ending, invoices, and receipts usually stay in finance even when they feel urgent.\n\n"
                 "Score calibration:\n"
                 "- The summary treats emails with importance_score >= 50 as important.\n"
                 "- urgent: usually 80-100\n"
@@ -48,6 +61,11 @@ def classification_messages(emails: list[NormalizedEmail]) -> list[dict[str, str
                 "- low_priority: usually 0-24\n"
                 "- If the email should appear in the important daily summary, give it >= 50.\n"
                 "- If the email should not appear in the important daily summary, give it < 50.\n\n"
+                "Reason-writing guidance:\n"
+                "- Write a short reason tied to the actual evidence in the email.\n"
+                "- Mention the trigger clearly: deadline, reply expectation, scheduling, billing, or informational update.\n"
+                "- Do not mention hidden policies, prompt rules, or internal reasoning process.\n"
+                "- Avoid generic reasons like 'This seems important' without evidence.\n\n"
                 "Uncertainty handling:\n"
                 "- Always return confidence_score from 0 to 100 for how confident you are in the label, score, and actionability.\n"
                 "- Set abstained=true when the evidence is too ambiguous to trust your own classification.\n"
@@ -68,6 +86,11 @@ def classification_messages(emails: list[NormalizedEmail]) -> list[dict[str, str
                 "- needs_action is usually true for explicit reply requests, confirmations, deadline-driven tasks, interview or meeting confirmations, and finance emails that require a keep/cancel/review decision.\n"
                 "- needs_action is usually false for purely informational updates, completed cancellations, receipts with no follow-up decision, and low-priority promotional mail.\n"
                 "- If an email asks for confirmation, review, or a choice before a deadline, prefer needs_action=true.\n\n"
+                "Output discipline:\n"
+                "- Return one result per email and preserve the input Email IDs exactly.\n"
+                "- Do not skip emails, merge emails, or invent missing emails.\n"
+                "- Use the full score range deliberately; do not collapse everything into the middle.\n"
+                "- Be consistent across the batch.\n\n"
                 "Examples:\n"
                 "- 'Interview calendar hold for Monday' -> meeting, score around 70, needs_action=true, confidence_score around 85, abstained=false\n"
                 "- 'Your free trial ends tomorrow' -> finance, score around 80, needs_action=true, confidence_score around 85, abstained=false\n"
@@ -120,7 +143,8 @@ def summary_messages(
     if language == "de":
         user_prompt = (
             "Schreibe eine Ueberschrift und eine kurze Zusammenfassung der wichtigen E-Mails "
-            "von heute. Verwende als kurze, natuerliche Ueberschrift bevorzugt 'Dein Tag in E-Mails'.\n\n"
+            "von heute. Verwende als kurze, natuerliche Ueberschrift bevorzugt 'Dein Tag in E-Mails'. "
+            "Die Zusammenfassung soll priorisieren, was jetzt Aufmerksamkeit braucht, und nicht nur Themen aufzaehlen.\n\n"
             "Wichtige E-Mails:\n\n"
             + "\n\n---\n\n".join(blocks)
             + "\n\nVorgeschlagene naechste Schritte:\n"
@@ -128,7 +152,8 @@ def summary_messages(
         )
     else:
         user_prompt = (
-            "Write a headline and short overview for today's important emails.\n\n"
+            "Write a headline and short overview for today's important emails. "
+            "Prioritize what actually needs attention instead of merely listing topics.\n\n"
             "Important emails:\n\n"
             + "\n\n---\n\n".join(blocks)
             + "\n\nSuggested action items:\n"
@@ -141,7 +166,14 @@ def summary_messages(
             "content": (
                 "You write a concise, practical end-of-day email summary. "
                 "Keep it short, clear, and action-oriented. "
+                "Sound calm, useful, and trustworthy rather than dramatic. "
+                "Synthesize the inbox into a few meaningful takeaways instead of repeating each email one by one. "
                 "Do not invent details beyond the provided emails. "
+                "If there are no real follow-ups, say so implicitly through a calm summary rather than inventing urgency. "
+                "Prefer plain language over jargon. "
+                "The headline should be short and natural, not clicky. "
+                "The overview should usually be 2 to 4 sentences and should mention the most important themes, deadlines, or decisions. "
+                "If suggested action items clearly matter, reflect them in the overview. "
                 f"{language_instruction}"
             ),
         },

@@ -2,7 +2,7 @@ from datetime import datetime
 
 from email_agent.config import Settings
 from email_agent.models.email import EmailAssessment, NormalizedEmail
-from email_agent.prompts.email_prompts import classification_messages
+from email_agent.prompts.email_prompts import classification_messages, summary_messages
 from email_agent.services import llm
 
 
@@ -23,15 +23,45 @@ def test_classification_prompt_contains_priority_guidance() -> None:
     messages = classification_messages([_email("msg-1")])
     system_prompt = messages[0]["content"]
 
+    assert "return exactly one assessment for the matching Email ID" in system_prompt
+    assert "Optimize for a calm, trustworthy daily brief" in system_prompt
     assert "Choose meeting over needs_reply" in system_prompt
     assert "Choose finance over urgent" in system_prompt
     assert "'Your free trial ends tomorrow' -> finance" in system_prompt
+    assert "Promotional urgency like 'last chance'" in system_prompt
     assert "needs_action guidance" in system_prompt
     assert "prefer needs_action=true" in system_prompt
     assert "importance_score >= 50" in system_prompt
     assert "urgent: usually 80-100" in system_prompt
+    assert "Write a short reason tied to the actual evidence" in system_prompt
     assert "confidence_score from 0 to 100" in system_prompt
     assert "Set abstained=true" in system_prompt
+
+
+def test_summary_prompt_contains_grounding_and_tone_guidance() -> None:
+    email = _email("msg-1")
+    assessment = EmailAssessment(
+        email_id="msg-1",
+        label="meeting",
+        importance_score=72,
+        reason="Interview scheduling requires attention.",
+        needs_action=True,
+    )
+    messages = summary_messages(
+        important_emails=[email],
+        assessments=[assessment],
+        action_items=[],
+        language="en",
+    )
+
+    system_prompt = messages[0]["content"]
+    user_prompt = messages[1]["content"]
+
+    assert "Sound calm, useful, and trustworthy rather than dramatic." in system_prompt
+    assert "The overview should usually be 2 to 4 sentences" in system_prompt
+    assert "Do not invent details beyond the provided emails." in system_prompt
+    assert "Prioritize what actually needs attention" in user_prompt
+    assert "Suggested action items" in user_prompt
 
 
 def test_classify_emails_with_llm_batches_large_inputs(monkeypatch) -> None:
