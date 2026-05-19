@@ -117,6 +117,7 @@ const UI_TEXT = {
     noDueHint: "No explicit due hint found.",
     heuristicOrFallback: "Heuristic or fallback",
     llmAssisted: "LLM-assisted",
+    runModeMixed: (classification, summary) => `${classification} / ${summary}`,
   },
   de: {
     loadingKicker: "Laden",
@@ -231,6 +232,7 @@ const UI_TEXT = {
     noDueHint: "Keine ausdrückliche Frist erkannt.",
     heuristicOrFallback: "Heuristik oder Fallback",
     llmAssisted: "LLM-gestützt",
+    runModeMixed: (classification, summary) => `${classification} / ${summary}`,
   },
 };
 
@@ -874,6 +876,20 @@ function getTodayDateInputValue() {
   return new Date(today.getTime() - timezoneOffsetMs).toISOString().slice(0, 10);
 }
 
+function formatExecutionMode(runMetadata, summary, assessments, ui) {
+  const classificationMode = formatMode(runMetadata?.classification_mode, ui);
+  const summaryMode = formatMode(runMetadata?.summary_mode, ui);
+
+  if (classificationMode && summaryMode) {
+    if (classificationMode === summaryMode) {
+      return classificationMode;
+    }
+    return ui.runModeMixed(classificationMode, summaryMode);
+  }
+
+  return summaryMode ?? classificationMode ?? detectExecutionMode(summary, assessments, ui);
+}
+
 function getSheetKicker(activeSheet, ui) {
   if (activeSheet === "workflow") {
     return ui.workflow;
@@ -921,7 +937,7 @@ function buildDashboardData(runData) {
     provider: provider.toUpperCase(),
     language,
     llmProvider: runMetadata?.llm_provider ?? ui.unknown,
-    executionMode: formatMode(runMetadata?.summary_mode, ui) ?? detectExecutionMode(summary, assessments, ui),
+    executionMode: formatExecutionMode(runMetadata, summary, assessments, ui),
     stats: [
       { label: ui.importantMails, value: String(summary.important_email_ids.length), tone: "coral" },
       { label: ui.subscriptionsStat, value: String(subscriptions.length), tone: "gold" },
