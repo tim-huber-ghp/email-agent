@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 
 const DEFAULT_RUN_PROVIDER = "mock";
+const DEFAULT_TRIGGER_DATE = getTodayDateInputValue();
 
 const UI_TEXT = {
   en: {
@@ -18,6 +19,7 @@ const UI_TEXT = {
     runningRun: "Running summary...",
     runCompleted: (date) => `Summary run completed for ${date}.`,
     runProvider: "Run with",
+    runDate: "Run date",
     livePill: "Run dashboard",
     signalLabel: "Daily summary",
     runOverview: "Run overview",
@@ -128,6 +130,7 @@ const UI_TEXT = {
     runningRun: "Zusammenfassung läuft...",
     runCompleted: (date) => `Zusammenfassung für ${date} abgeschlossen.`,
     runProvider: "Ausführen mit",
+    runDate: "Datum",
     livePill: "Übersicht",
     signalLabel: "Tageszusammenfassung",
     runOverview: "Laufüberblick",
@@ -233,6 +236,7 @@ function App() {
   const [loading, setLoading] = useState(true);
   const [activeSheet, setActiveSheet] = useState(null);
   const [runProvider, setRunProvider] = useState(DEFAULT_RUN_PROVIDER);
+  const [triggerDate, setTriggerDate] = useState(DEFAULT_TRIGGER_DATE);
   const [runActionError, setRunActionError] = useState("");
   const [runActionMessage, setRunActionMessage] = useState("");
   const [isRunning, setIsRunning] = useState(false);
@@ -305,6 +309,7 @@ function App() {
         },
         body: JSON.stringify({
           provider: runProvider,
+          run_date: triggerDate,
         }),
       });
 
@@ -344,6 +349,8 @@ function App() {
             ui={ui}
             runProvider={runProvider}
             setRunProvider={setRunProvider}
+            triggerDate={triggerDate}
+            setTriggerDate={setTriggerDate}
             isRunning={isRunning}
             onRun={handleRunTrigger}
             error={runActionError}
@@ -365,6 +372,8 @@ function App() {
             ui={ui}
             runProvider={runProvider}
             setRunProvider={setRunProvider}
+            triggerDate={triggerDate}
+            setTriggerDate={setTriggerDate}
             isRunning={isRunning}
             onRun={handleRunTrigger}
             error={runActionError}
@@ -426,6 +435,8 @@ function App() {
               ui={ui}
               runProvider={runProvider}
               setRunProvider={setRunProvider}
+              triggerDate={triggerDate}
+              setTriggerDate={setTriggerDate}
               isRunning={isRunning}
               onRun={handleRunTrigger}
               error={runActionError}
@@ -767,7 +778,18 @@ function App() {
 
 export default App;
 
-function RunLauncher({ ui, runProvider, setRunProvider, isRunning, onRun, error, message, compact = false }) {
+function RunLauncher({
+  ui,
+  runProvider,
+  setRunProvider,
+  triggerDate,
+  setTriggerDate,
+  isRunning,
+  onRun,
+  error,
+  message,
+  compact = false,
+}) {
   return (
     <div className={`run-launcher ${compact ? "run-launcher-compact" : ""}`}>
       {!compact ? (
@@ -785,6 +807,11 @@ function RunLauncher({ ui, runProvider, setRunProvider, isRunning, onRun, error,
             <option value="mock">{ui.mockLabel}</option>
             <option value="gmail">{ui.gmailLabel}</option>
           </select>
+        </label>
+
+        <label className="run-picker">
+          <span>{ui.runDate}</span>
+          <input type="date" value={triggerDate} onChange={(event) => setTriggerDate(event.target.value)} />
         </label>
 
         <button type="button" className="inspector-toggle run-trigger-button" onClick={onRun} disabled={isRunning}>
@@ -817,6 +844,12 @@ async function fetchJson(url, fallbackMessage, options) {
     throw new Error(payload.error ?? fallbackMessage);
   }
   return payload;
+}
+
+function getTodayDateInputValue() {
+  const today = new Date();
+  const timezoneOffsetMs = today.getTimezoneOffset() * 60 * 1000;
+  return new Date(today.getTime() - timezoneOffsetMs).toISOString().slice(0, 10);
 }
 
 function getSheetKicker(activeSheet, ui) {
