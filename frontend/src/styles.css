@@ -26,9 +26,14 @@ body {
   margin: 0;
   min-width: 320px;
   background:
-    radial-gradient(circle at top left, rgba(255, 255, 255, 0.92), transparent 28%),
-    radial-gradient(circle at bottom right, rgba(255, 255, 255, 0.72), transparent 26%),
-    linear-gradient(180deg, #f8f9fb 0%, #eceff2 100%);
+    linear-gradient(180deg, rgba(255, 255, 255, 0.62) 0%, rgba(255, 255, 255, 0.5) 100%),
+    radial-gradient(circle at top left, rgba(255, 255, 255, 0.54), transparent 28%),
+    radial-gradient(circle at bottom right, rgba(255, 255, 255, 0.18), transparent 24%),
+    url("https://upload.wikimedia.org/wikipedia/commons/f/fd/Le_bassin_aux_nymph%C3%A9as_-_Claude_Monet.jpg");
+  background-position: center, top left, bottom right, center;
+  background-size: auto, auto, auto, cover;
+  background-repeat: no-repeat, no-repeat, no-repeat, no-repeat;
+  background-attachment: scroll, scroll, scroll, fixed;
   color: var(--ink);
   font-family: "Manrope", "Avenir Next", "Segoe UI", sans-serif;
 }
