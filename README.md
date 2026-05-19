@@ -4,7 +4,7 @@ An end-to-end Gmail email summary agent built with Python, LangGraph, and React.
 
 I built this project to turn daily email overload into a short, actionable summary, with structured signals such as subscriptions, deadlines, and follow-ups.
 
-It reads daily emails, classifies what matters, extracts structured signals such as deadlines and subscriptions, and saves inspectable run artifacts that power a small dashboard.
+It reads daily emails, classifies what matters, extracts structured signals such as deadlines and subscriptions, and saves inspectable run artifacts that power a small dashboard and local API.
 
 ## Why This Project
 
@@ -15,7 +15,7 @@ This project is designed as a small but credible AI product:
 - hybrid heuristic and LLM classification paths
 - structured extraction for deadlines, meetings, and subscriptions
 - evaluation on synthetic and anonymized real-email datasets
-- React frontend backed by persisted run artifacts
+- React frontend backed by a local Python API and persisted run artifacts
 
 ## Current Features
 
@@ -28,6 +28,8 @@ This project is designed as a small but credible AI product:
 - localized output in English or German
 - persisted run artifacts under `data/runs/YYYY-MM-DD/`
 - frontend dashboard for reviewing saved runs
+- frontend-triggered runs with provider and date selection
+- frontend interface language switch between English and German
 - offline evaluation harness with:
   - easy curated dataset
   - harder synthetic dataset
@@ -50,7 +52,8 @@ High-level flow:
    - recurring subscriptions
 7. generate the daily summary
 8. persist structured artifacts
-9. render the latest saved run in the frontend
+9. serve saved runs and run triggers through a local Python API
+10. render and launch runs from the frontend
 
 Main modules:
 
@@ -67,6 +70,7 @@ src/email_agent/
   storage/     # persisted run artifacts
 
 frontend/      # React + Vite dashboard
+src/email_agent/api/  # local HTTP API for runs + artifacts
 data/          # runs, auth, eval datasets, reports
 tests/         # regression coverage
 ```
@@ -196,11 +200,13 @@ The frontend lives in `frontend/` and talks to a small Python API that:
 It currently shows:
 
 - summary headline and overview
+- frontend trigger controls for provider and run date
 - important emails
 - action items
 - deadlines
 - meetings
 - recurring charges
+- frontend interface language switch
 - technical metadata behind a toggle
 - workflow / guardrail details on demand
 
@@ -290,7 +296,7 @@ data/runs/YYYY-MM-DD/
   run_metadata.json
 ```
 
-This makes the workflow easy to inspect and powers the frontend without a separate backend service.
+This makes the workflow easy to inspect and powers the frontend through the local Python API.
 
 ## Privacy And Security
 
@@ -321,8 +327,8 @@ Before sharing the repo publicly, rotate any real API keys that may have been pl
 The fastest way to demo the project:
 
 1. authenticate Gmail
-2. run a summary
-3. start the frontend
+2. start the API and frontend
+3. trigger a summary from the frontend or the CLI
 4. open the latest saved run
 5. inspect:
    - summary
