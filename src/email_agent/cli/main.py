@@ -114,6 +114,24 @@ def summarize(
     )
 
 
+@app.command("serve-api")
+def serve_api(
+    host: str = typer.Option("127.0.0.1", help="Host interface for the local API server."),
+    port: int = typer.Option(8000, help="Port for the local API server."),
+) -> None:
+    """Serve the local JSON API for the frontend dashboard."""
+
+    from email_agent.api.server import serve_api as start_api_server
+
+    settings = get_settings()
+    is_german = settings.language == "de"
+    typer.echo(
+        f"{_label('Starting API server on', 'API-Server startet auf', is_german)}: "
+        f"http://{host}:{port}"
+    )
+    start_api_server(settings=settings, host=host, port=port)
+
+
 @app.command("gmail-auth")
 def gmail_auth() -> None:
     """Run Gmail desktop OAuth and save the token locally."""

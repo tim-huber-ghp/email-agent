@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 
+const DEFAULT_RUN_PROVIDER = "mock";
+
 const UI_TEXT = {
   en: {
     loadingKicker: "Loading",
@@ -9,6 +11,13 @@ const UI_TEXT = {
     noDataKicker: "No data yet",
     noDataTitle: "Run the email agent first",
     noDataBody: "Saved summaries from data/runs/ will appear here automatically.",
+    runAgent: "Run agent",
+    runAgentTitle: "Trigger a fresh summary",
+    runAgentHint: "Start a new summary run from the dashboard and reload the saved artifacts when it finishes.",
+    runNow: "Run summary",
+    runningRun: "Running summary...",
+    runCompleted: (date) => `Summary run completed for ${date}.`,
+    runProvider: "Run with",
     livePill: "Run dashboard",
     signalLabel: "Daily summary",
     runOverview: "Run overview",
@@ -77,6 +86,7 @@ const UI_TEXT = {
     unknown: "Unknown",
     yes: "Yes",
     no: "No",
+    gmailLabel: "gmail",
     mockLabel: "mock",
     noPreview: "No preview available.",
     savedSummary: "Saved summary",
@@ -111,6 +121,13 @@ const UI_TEXT = {
     noDataKicker: "Noch keine Daten",
     noDataTitle: "Starte den Email-Agenten zuerst",
     noDataBody: "Gespeicherte Zusammenfassungen aus data/runs/ erscheinen hier automatisch.",
+    runAgent: "Agent starten",
+    runAgentTitle: "Neue Zusammenfassung auslösen",
+    runAgentHint: "Starte einen neuen Lauf direkt aus dem Dashboard und lade die gespeicherten Artefakte danach neu.",
+    runNow: "Zusammenfassung starten",
+    runningRun: "Zusammenfassung läuft...",
+    runCompleted: (date) => `Zusammenfassung für ${date} abgeschlossen.`,
+    runProvider: "Ausführen mit",
     livePill: "Übersicht",
     signalLabel: "Tageszusammenfassung",
     runOverview: "Laufüberblick",
@@ -179,6 +196,7 @@ const UI_TEXT = {
     unknown: "Unbekannt",
     yes: "Ja",
     no: "Nein",
+    gmailLabel: "gmail",
     mockLabel: "mock",
     noPreview: "Keine Vorschau verfügbar.",
     savedSummary: "Gespeicherte Zusammenfassung",
@@ -214,62 +232,48 @@ function App() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
   const [activeSheet, setActiveSheet] = useState(null);
+  const [runProvider, setRunProvider] = useState(DEFAULT_RUN_PROVIDER);
+  const [runActionError, setRunActionError] = useState("");
+  const [runActionMessage, setRunActionMessage] = useState("");
+  const [isRunning, setIsRunning] = useState(false);
 
   useEffect(() => {
-    let cancelled = false;
-
-    async function loadRuns() {
-      try {
-        setLoading(true);
-        const runsResponse = await fetch("/api/runs");
-        const runsPayload = await runsResponse.json();
-        if (cancelled) {
-          return;
-        }
-
-        const availableRuns = runsPayload.runs ?? [];
-        setRuns(availableRuns);
-
-        if (availableRuns.length === 0) {
-          setRunData(null);
-          setSelectedRunDate("");
-          setError("");
-          return;
-        }
-
-        const preferredRun = pickPreferredRun(availableRuns);
-        const latestRun = await fetchRun(preferredRun.date);
-        if (cancelled) {
-          return;
-        }
-
-        setRunData(latestRun);
-        setSelectedRunDate(preferredRun.date);
-        setError("");
-      } catch (loadError) {
-        if (!cancelled) {
-          setError(loadError instanceof Error ? loadError.message : "Could not load run data.");
-        }
-      } finally {
-        if (!cancelled) {
-          setLoading(false);
-        }
-      }
-    }
-
     loadRuns();
-    return () => {
-      cancelled = true;
-    };
   }, []);
 
   async function fetchRun(date) {
-    const response = await fetch(`/api/runs/${date}`);
-    const payload = await response.json();
-    if (!response.ok) {
-      throw new Error(payload.error ?? "Failed to load selected run.");
-    }
+    const payload = await fetchJson(`/api/runs/${date}`, "Failed to load selected run.");
     return payload.run;
+  }
+
+  async function loadRuns(preferredDate = "", preferredRun = null) {
+    try {
+      setLoading(true);
+      const runsPayload = await fetchJson("/api/runs", "Could not load run data.");
+      const availableRuns = runsPayload.runs ?? [];
+      setRuns(availableRuns);
+
+      if (availableRuns.length === 0) {
+        setRunData(null);
+        setSelectedRunDate("");
+        setError("");
+        return;
+      }
+
+      const nextPreferredRun = pickPreferredRun(availableRuns, preferredDate || selectedRunDate);
+      const nextRun =
+        preferredRun && preferredRun.date === nextPreferredRun.date
+          ? preferredRun
+          : await fetchRun(nextPreferredRun.date);
+
+      setRunData(nextRun);
+      setSelectedRunDate(nextPreferredRun.date);
+      setError("");
+    } catch (loadError) {
+      setError(loadError instanceof Error ? loadError.message : "Could not load run data.");
+    } finally {
+      setLoading(false);
+    }
   }
 
   async function handleRunChange(event) {
@@ -285,6 +289,33 @@ function App() {
       setError(loadError instanceof Error ? loadError.message : "Could not load run data.");
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function handleRunTrigger() {
+    setIsRunning(true);
+    setRunActionError("");
+    setRunActionMessage("");
+
+    try {
+      const payload = await fetchJson("/api/runs", "Could not start a summary run.", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          provider: runProvider,
+        }),
+      });
+
+      await loadRuns(payload.run?.date ?? "", payload.run ?? null);
+      if (payload.run?.date) {
+        setRunActionMessage(ui.runCompleted(payload.run.date));
+      }
+    } catch (runError) {
+      setRunActionError(runError instanceof Error ? runError.message : "Could not start a summary run.");
+    } finally {
+      setIsRunning(false);
     }
   }
 
@@ -309,6 +340,15 @@ function App() {
           <span className="section-kicker">{ui.frontendKicker}</span>
           <h2>{ui.loadErrorTitle}</h2>
           <p>{error}</p>
+          <RunLauncher
+            ui={ui}
+            runProvider={runProvider}
+            setRunProvider={setRunProvider}
+            isRunning={isRunning}
+            onRun={handleRunTrigger}
+            error={runActionError}
+            message={runActionMessage}
+          />
         </div>
       </div>
     );
@@ -321,6 +361,15 @@ function App() {
           <span className="section-kicker">{ui.noDataKicker}</span>
           <h2>{ui.noDataTitle}</h2>
           <p>{ui.noDataBody}</p>
+          <RunLauncher
+            ui={ui}
+            runProvider={runProvider}
+            setRunProvider={setRunProvider}
+            isRunning={isRunning}
+            onRun={handleRunTrigger}
+            error={runActionError}
+            message={runActionMessage}
+          />
         </div>
       </div>
     );
@@ -372,6 +421,17 @@ function App() {
                 ))}
               </select>
             </label>
+
+            <RunLauncher
+              ui={ui}
+              runProvider={runProvider}
+              setRunProvider={setRunProvider}
+              isRunning={isRunning}
+              onRun={handleRunTrigger}
+              error={runActionError}
+              message={runActionMessage}
+              compact
+            />
 
             <div className="summary-status-row">
               <span className="summary-status">{dashboardData.executionMode}</span>
@@ -707,9 +767,56 @@ function App() {
 
 export default App;
 
-function pickPreferredRun(runs) {
+function RunLauncher({ ui, runProvider, setRunProvider, isRunning, onRun, error, message, compact = false }) {
+  return (
+    <div className={`run-launcher ${compact ? "run-launcher-compact" : ""}`}>
+      {!compact ? (
+        <div className="run-launcher-copy">
+          <span className="section-kicker">{ui.runAgent}</span>
+          <h3>{ui.runAgentTitle}</h3>
+          <p>{ui.runAgentHint}</p>
+        </div>
+      ) : null}
+
+      <div className="run-launcher-controls">
+        <label className="run-picker">
+          <span>{ui.runProvider}</span>
+          <select value={runProvider} onChange={(event) => setRunProvider(event.target.value)}>
+            <option value="mock">{ui.mockLabel}</option>
+            <option value="gmail">{ui.gmailLabel}</option>
+          </select>
+        </label>
+
+        <button type="button" className="inspector-toggle run-trigger-button" onClick={onRun} disabled={isRunning}>
+          {isRunning ? ui.runningRun : ui.runNow}
+        </button>
+      </div>
+
+      {error ? <p className="signal-feedback signal-feedback-error">{error}</p> : null}
+      {!error && message ? <p className="signal-feedback">{message}</p> : null}
+    </div>
+  );
+}
+
+function pickPreferredRun(runs, preferredDate = "") {
+  if (preferredDate) {
+    const matchingRun = runs.find((run) => run.date === preferredDate);
+    if (matchingRun) {
+      return matchingRun;
+    }
+  }
+
   const realRun = runs.find((run) => !run.isMock);
   return realRun ?? runs[0];
+}
+
+async function fetchJson(url, fallbackMessage, options) {
+  const response = await fetch(url, options);
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    throw new Error(payload.error ?? fallbackMessage);
+  }
+  return payload;
 }
 
 function getSheetKicker(activeSheet, ui) {

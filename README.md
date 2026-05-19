@@ -95,7 +95,15 @@ Or without LLM usage:
 make run-mock-fast
 ```
 
-### 3. Start the frontend
+### 3. Start the API and frontend
+
+In one terminal, start the Python API:
+
+```bash
+make api
+```
+
+In a second terminal, start the frontend:
 
 ```bash
 cd frontend
@@ -108,6 +116,7 @@ npm run dev
 Use these from the repo root:
 
 ```bash
+make api
 make run-gmail
 make run-mock
 make run-mock-fast
@@ -178,7 +187,11 @@ This keeps heuristic classification but still uses an LLM for the final summary.
 
 ## Frontend
 
-The frontend lives in `frontend/` and reads saved run artifacts through a small Vite-powered local API.
+The frontend lives in `frontend/` and talks to a small Python API that:
+
+- lists saved runs from `data/runs/`
+- loads a single saved run for inspection
+- triggers a new summary run from the dashboard
 
 It currently shows:
 
@@ -194,6 +207,8 @@ It currently shows:
 To run:
 
 ```bash
+make api
+
 cd frontend
 npm run dev
 ```

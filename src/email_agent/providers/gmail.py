@@ -9,6 +9,7 @@ from datetime import UTC, date, datetime, timedelta
 from email.utils import parseaddr
 from pathlib import Path
 
+from google.auth.exceptions import RefreshError
 from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import InstalledAppFlow
@@ -88,10 +89,18 @@ def _load_or_create_credentials(settings: Settings, interactive: bool) -> Creden
         return creds
 
     if creds and creds.expired and creds.refresh_token:
-        creds.refresh(Request())
-        token_path.parent.mkdir(parents=True, exist_ok=True)
-        token_path.write_text(creds.to_json(), encoding="utf-8")
-        return creds
+        try:
+            creds.refresh(Request())
+            token_path.parent.mkdir(parents=True, exist_ok=True)
+            token_path.write_text(creds.to_json(), encoding="utf-8")
+            return creds
+        except RefreshError as exc:
+            if not interactive:
+                raise RuntimeError(
+                    "Your Gmail session is no longer valid. Run "
+                    "`email-agent gmail-auth` to sign in again."
+                ) from exc
+            creds = None
 
     if not interactive:
         raise RuntimeError("No valid Gmail token found.")

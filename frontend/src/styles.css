@@ -240,6 +240,59 @@ h3 {
   box-shadow: 0 0 0 4px rgba(17, 18, 20, 0.05);
 }
 
+.run-launcher {
+  display: grid;
+  gap: 14px;
+  padding: 18px;
+  border-radius: 20px;
+  border: 1px solid rgba(17, 18, 20, 0.06);
+  background: rgba(255, 255, 255, 0.72);
+}
+
+.run-launcher-compact {
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+
+.run-launcher-copy h3 {
+  margin-bottom: 10px;
+}
+
+.run-launcher-copy p {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.6;
+}
+
+.run-launcher-controls {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: end;
+}
+
+.run-trigger-button {
+  min-height: 50px;
+  justify-content: center;
+}
+
+.run-trigger-button:disabled {
+  cursor: wait;
+  opacity: 0.72;
+}
+
+.signal-feedback {
+  margin: 0;
+  color: var(--success);
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+.signal-feedback-error {
+  color: #9b3d2f;
+}
+
 .signal-label {
   color: var(--muted);
   font-size: 0.82rem;
@@ -545,6 +598,11 @@ h3 {
   margin: 10vh auto 0;
 }
 
+.empty-state p {
+  color: var(--muted);
+  line-height: 1.6;
+}
+
 .panel-summary {
   margin: 18px 0 0;
   color: var(--muted);
@@ -769,6 +827,10 @@ h3 {
 
   .signal-rail {
     min-height: auto;
+  }
+
+  .run-launcher-controls {
+    grid-template-columns: 1fr;
   }
 }
 
