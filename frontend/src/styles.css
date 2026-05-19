@@ -99,6 +99,13 @@ body {
   justify-content: space-between;
 }
 
+.hero-top-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
 .eyebrow,
 .live-pill,
 .section-kicker,
@@ -121,6 +128,39 @@ body {
   border: 1px solid var(--line);
   color: var(--muted);
   background: rgba(255, 255, 255, 0.72);
+}
+
+.locale-switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.72);
+}
+
+.locale-switch span {
+  color: var(--muted);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.locale-switch select {
+  border: 0;
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+  font-size: 0.84rem;
+  font-weight: 700;
+  padding-right: 4px;
+}
+
+.locale-switch select:focus {
+  outline: none;
 }
 
 .hero-grid {

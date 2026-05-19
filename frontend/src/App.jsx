@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 
 const DEFAULT_RUN_PROVIDER = "mock";
 const DEFAULT_TRIGGER_DATE = getTodayDateInputValue();
+const LOCALE_STORAGE_KEY = "email-agent-ui-locale";
 
 const UI_TEXT = {
   en: {
@@ -20,6 +21,7 @@ const UI_TEXT = {
     runCompleted: (date) => `Summary run completed for ${date}.`,
     runProvider: "Run with",
     runDate: "Run date",
+    interfaceLanguage: "Interface",
     currentRun: "Current run",
     newRun: "New run",
     launchHint: "Choose a provider and date, then start a fresh run.",
@@ -135,6 +137,7 @@ const UI_TEXT = {
     runCompleted: (date) => `Zusammenfassung für ${date} abgeschlossen.`,
     runProvider: "Ausführen mit",
     runDate: "Datum",
+    interfaceLanguage: "Sprache",
     currentRun: "Aktueller Lauf",
     newRun: "Neuer Lauf",
     launchHint: "Quelle und Datum wählen und dann einen neuen Lauf starten.",
@@ -240,6 +243,7 @@ function App() {
   const [runs, setRuns] = useState([]);
   const [selectedRunDate, setSelectedRunDate] = useState("");
   const [runData, setRunData] = useState(null);
+  const [interfaceLocale, setInterfaceLocale] = useState(getInitialInterfaceLocale);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
   const [activeSheet, setActiveSheet] = useState(null);
@@ -252,6 +256,10 @@ function App() {
   useEffect(() => {
     loadRuns();
   }, []);
+
+  useEffect(() => {
+    window.localStorage.setItem(LOCALE_STORAGE_KEY, interfaceLocale);
+  }, [interfaceLocale]);
 
   async function fetchRun(date) {
     const payload = await fetchJson(`/api/runs/${date}`, "Failed to load selected run.");
@@ -332,8 +340,11 @@ function App() {
     }
   }
 
-  const dashboardData = useMemo(() => buildDashboardData(runData), [runData]);
-  const ui = dashboardData?.ui ?? UI_TEXT.en;
+  const dashboardData = useMemo(
+    () => buildDashboardData(runData, interfaceLocale),
+    [runData, interfaceLocale],
+  );
+  const ui = dashboardData?.ui ?? UI_TEXT[interfaceLocale];
 
   if (loading && !runData) {
     return (
@@ -400,7 +411,16 @@ function App() {
       <header className="hero-card">
         <div className="eyebrow-row">
           <span className="eyebrow">Email Agent</span>
-          <span className="live-pill">{ui.livePill}</span>
+          <div className="hero-top-actions">
+            <span className="live-pill">{ui.livePill}</span>
+            <label className="locale-switch">
+              <span>{ui.interfaceLanguage}</span>
+              <select value={interfaceLocale} onChange={(event) => setInterfaceLocale(event.target.value)}>
+                <option value="de">{ui.german}</option>
+                <option value="en">{ui.english}</option>
+              </select>
+            </label>
+          </div>
         </div>
 
         <div className="hero-grid">
@@ -876,6 +896,20 @@ function getTodayDateInputValue() {
   return new Date(today.getTime() - timezoneOffsetMs).toISOString().slice(0, 10);
 }
 
+function getInitialInterfaceLocale() {
+  if (typeof window === "undefined") {
+    return "en";
+  }
+
+  const storedLocale = window.localStorage.getItem(LOCALE_STORAGE_KEY);
+  if (storedLocale === "de" || storedLocale === "en") {
+    return storedLocale;
+  }
+
+  const browserLocale = window.navigator.language?.toLowerCase() ?? "";
+  return browserLocale.startsWith("de") ? "de" : "en";
+}
+
 function formatExecutionMode(runMetadata, summary, assessments, ui) {
   const classificationMode = formatMode(runMetadata?.classification_mode, ui);
   const summaryMode = formatMode(runMetadata?.summary_mode, ui);
@@ -910,7 +944,7 @@ function getSheetTitle(activeSheet, ui) {
   return ui.technicalMetadata;
 }
 
-function buildDashboardData(runData) {
+function buildDashboardData(runData, interfaceLocale) {
   if (!runData) {
     return null;
   }
@@ -920,9 +954,9 @@ function buildDashboardData(runData) {
   const importantEmails = emails.filter((email) => importantIds.has(email.id));
   const assessmentMap = new Map(assessments.map((item) => [item.email_id, item]));
   const provider = runMetadata?.provider ?? importantEmails[0]?.source ?? emails[0]?.source ?? "unknown";
-  const locale = summary.language === "de" ? "de" : "en";
+  const locale = interfaceLocale === "de" ? "de" : "en";
   const ui = UI_TEXT[locale];
-  const language = locale === "de" ? ui.german : ui.english;
+  const runLanguage = summary.language === "de" ? ui.german : ui.english;
 
   return {
     ui,
@@ -935,7 +969,7 @@ function buildDashboardData(runData) {
     dateLabel: formatDate(date, locale),
     dateBadge: date,
     provider: provider.toUpperCase(),
-    language,
+    language: runLanguage,
     llmProvider: runMetadata?.llm_provider ?? ui.unknown,
     executionMode: formatExecutionMode(runMetadata, summary, assessments, ui),
     stats: [
@@ -999,7 +1033,7 @@ function buildDashboardData(runData) {
     },
     previewMeta: [
       { label: ui.provider, value: provider.toUpperCase() },
-      { label: ui.language, value: language },
+      { label: ui.language, value: runLanguage },
       { label: ui.workflowDuration, value: formatDuration(runMetadata?.workflow_duration_ms) },
       { label: ui.totalTokens, value: formatInteger(runMetadata?.llm_total_tokens ?? 0) },
       { label: ui.emailCount, value: String(runMetadata?.email_count ?? emails.length) },
