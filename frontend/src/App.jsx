@@ -20,6 +20,9 @@ const UI_TEXT = {
     runCompleted: (date) => `Summary run completed for ${date}.`,
     runProvider: "Run with",
     runDate: "Run date",
+    currentRun: "Current run",
+    newRun: "New run",
+    launchHint: "Choose a provider and date, then start a fresh run.",
     livePill: "Run dashboard",
     signalLabel: "Daily summary",
     runOverview: "Run overview",
@@ -131,6 +134,9 @@ const UI_TEXT = {
     runCompleted: (date) => `Zusammenfassung für ${date} abgeschlossen.`,
     runProvider: "Ausführen mit",
     runDate: "Datum",
+    currentRun: "Aktueller Lauf",
+    newRun: "Neuer Lauf",
+    launchHint: "Quelle und Datum wählen und dann einen neuen Lauf starten.",
     livePill: "Übersicht",
     signalLabel: "Tageszusammenfassung",
     runOverview: "Laufüberblick",
@@ -396,7 +402,7 @@ function App() {
         </div>
 
         <div className="hero-grid">
-          <div>
+          <div className="hero-main-stack">
             <h1>{dashboardData.headline}</h1>
             <div className="hero-summary-frame">
               <p className="hero-copy">{dashboardData.overview}</p>
@@ -404,6 +410,28 @@ function App() {
                 <p className="hero-note">{dashboardData.keyTakeaway}</p>
               ) : null}
             </div>
+
+            <section className="signal-section signal-section-emphasis hero-launch-section">
+              <div className="signal-section-header">
+                <div>
+                  <span className="section-kicker">{ui.newRun}</span>
+                  <p className="signal-section-copy">{ui.launchHint}</p>
+                </div>
+              </div>
+
+              <RunLauncher
+                ui={ui}
+                runProvider={runProvider}
+                setRunProvider={setRunProvider}
+                triggerDate={triggerDate}
+                setTriggerDate={setTriggerDate}
+                isRunning={isRunning}
+                onRun={handleRunTrigger}
+                error={runActionError}
+                message={runActionMessage}
+                compact
+              />
+            </section>
           </div>
 
           <div className="signal-card signal-rail">
@@ -420,36 +448,30 @@ function App() {
                 {activeSheet === "inspector" ? ui.hideDetails : ui.showDetails}
               </button>
             </div>
-            <label className="run-picker">
-              <span>{ui.savedRun}</span>
-              <select value={selectedRunDate} onChange={handleRunChange}>
-                {runs.map((run) => (
-                  <option key={run.date} value={run.date}>
-                    {run.date} {run.isMock ? `(${ui.mockLabel})` : `(${run.provider})`}
-                  </option>
-                ))}
-              </select>
-            </label>
+            <div className="signal-stack">
+              <section className="signal-section">
+                <div className="signal-section-header">
+                  <span className="section-kicker">{ui.currentRun}</span>
+                </div>
+                <label className="run-picker">
+                  <span>{ui.savedRun}</span>
+                  <select value={selectedRunDate} onChange={handleRunChange}>
+                    {runs.map((run) => (
+                      <option key={run.date} value={run.date}>
+                        {run.date} {run.isMock ? `(${ui.mockLabel})` : `(${run.provider})`}
+                      </option>
+                    ))}
+                  </select>
+                </label>
 
-            <RunLauncher
-              ui={ui}
-              runProvider={runProvider}
-              setRunProvider={setRunProvider}
-              triggerDate={triggerDate}
-              setTriggerDate={setTriggerDate}
-              isRunning={isRunning}
-              onRun={handleRunTrigger}
-              error={runActionError}
-              message={runActionMessage}
-              compact
-            />
-
-            <div className="summary-status-row">
-              <span className="summary-status">{dashboardData.executionMode}</span>
-              <span className="summary-subtle">{dashboardData.provider}</span>
+                <div className="summary-status-row">
+                  <span className="summary-status">{dashboardData.executionMode}</span>
+                  <span className="summary-subtle">{dashboardData.provider}</span>
+                </div>
+              </section>
             </div>
 
-            <div className="signal-rail-body">
+            <div className="signal-rail-body signal-section">
               <div className="inspector-preview">
                 <div className="inspector-preview-header">
                   <span className="section-kicker">{ui.runOverview}</span>

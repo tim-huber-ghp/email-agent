@@ -190,6 +190,16 @@ h3 {
   box-shadow: var(--shadow-soft);
 }
 
+.hero-main-stack {
+  display: grid;
+  gap: 18px;
+  align-content: start;
+}
+
+.hero-launch-section {
+  max-width: 58ch;
+}
+
 .signal-card {
   display: flex;
   flex-direction: column;
@@ -203,6 +213,38 @@ h3 {
 
 .signal-rail {
   min-height: 540px;
+}
+
+.signal-stack {
+  display: grid;
+  gap: 14px;
+}
+
+.signal-section {
+  padding: 16px;
+  border-radius: 20px;
+  border: 1px solid rgba(17, 18, 20, 0.06);
+  background: rgba(255, 255, 255, 0.64);
+}
+
+.signal-section-emphasis {
+  background: linear-gradient(180deg, rgba(248, 249, 251, 0.92) 0%, rgba(255, 255, 255, 0.82) 100%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.65);
+}
+
+.signal-section-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.signal-section-copy {
+  margin: 8px 0 0;
+  color: var(--muted);
+  font-size: 0.92rem;
+  line-height: 1.5;
 }
 
 .signal-topline {
@@ -268,7 +310,7 @@ h3 {
 }
 
 .run-launcher-compact .run-launcher-controls {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: minmax(0, 1fr) minmax(180px, 0.8fr);
 }
 
 .run-launcher-compact .run-trigger-button {
@@ -356,6 +398,7 @@ h3 {
   gap: 10px;
   flex-wrap: wrap;
   min-height: 36px;
+  margin-top: 14px;
 }
 
 .summary-status {
@@ -379,8 +422,7 @@ h3 {
 
 .signal-rail-body {
   min-height: 250px;
-  border-top: 1px solid var(--line);
-  padding-top: 14px;
+  margin-top: 2px;
 }
 
 .inspector-preview {
@@ -851,6 +893,10 @@ h3 {
   }
 
   .run-launcher-controls {
+    grid-template-columns: 1fr;
+  }
+
+  .run-launcher-compact .run-launcher-controls {
     grid-template-columns: 1fr;
   }
 }
