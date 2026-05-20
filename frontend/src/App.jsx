@@ -515,41 +515,41 @@ function App() {
       <div className="ambient ambient-left" />
       <div className="ambient ambient-right" />
 
+      <div className="page-topbar">
+        <span className="eyebrow">Email Agent</span>
+        <div className="hero-top-actions">
+          <div className="mode-switch" role="tablist" aria-label={ui.interfaceLanguage}>
+            <button
+              type="button"
+              className={`mode-switch-button ${activeMode === "brief" ? "mode-switch-button-active" : ""}`}
+              onClick={() => setActiveMode("brief")}
+            >
+              {ui.briefMode}
+            </button>
+            <button
+              type="button"
+              className={`mode-switch-button ${activeMode === "inspect" ? "mode-switch-button-active" : ""}`}
+              onClick={() => {
+                setActiveMode("inspect");
+                setInspectTab("run");
+              }}
+            >
+              {ui.inspectMode}
+            </button>
+          </div>
+          <label className="locale-switch">
+            <span>{ui.interfaceLanguage}</span>
+            <select value={interfaceLocale} onChange={(event) => setInterfaceLocale(event.target.value)}>
+              <option value="de">{ui.german}</option>
+              <option value="en">{ui.english}</option>
+            </select>
+          </label>
+        </div>
+      </div>
+
       {activeMode === "brief" ? (
         <>
           <header className="hero-card">
-            <div className="eyebrow-row">
-              <span className="eyebrow">Email Agent</span>
-              <div className="hero-top-actions">
-                <div className="mode-switch" role="tablist" aria-label={ui.interfaceLanguage}>
-                  <button
-                    type="button"
-                    className={`mode-switch-button ${activeMode === "brief" ? "mode-switch-button-active" : ""}`}
-                    onClick={() => setActiveMode("brief")}
-                  >
-                    {ui.briefMode}
-                  </button>
-                  <button
-                    type="button"
-                    className={`mode-switch-button ${activeMode === "inspect" ? "mode-switch-button-active" : ""}`}
-                    onClick={() => {
-                      setActiveMode("inspect");
-                      setInspectTab("run");
-                    }}
-                  >
-                    {ui.inspectMode}
-                  </button>
-                </div>
-                <label className="locale-switch">
-                  <span>{ui.interfaceLanguage}</span>
-                  <select value={interfaceLocale} onChange={(event) => setInterfaceLocale(event.target.value)}>
-                    <option value="de">{ui.german}</option>
-                    <option value="en">{ui.english}</option>
-                  </select>
-                </label>
-              </div>
-            </div>
-
             <div className="hero-grid hero-grid-briefing">
               <div className="hero-main-stack hero-main-stack-brief">
                 <div className="hero-brief-topline">
@@ -774,33 +774,14 @@ function App() {
           <header className="panel inspect-hero">
             <div className="inspect-hero-top">
               <div>
-                <span className="eyebrow">Email Agent</span>
                 <h1 className="inspect-hero-title">{ui.inspectTitle}</h1>
               </div>
-              <div className="hero-top-actions">
-                <div className="mode-switch" role="tablist" aria-label={ui.interfaceLanguage}>
-                  <button
-                    type="button"
-                    className={`mode-switch-button ${activeMode === "brief" ? "mode-switch-button-active" : ""}`}
-                    onClick={() => setActiveMode("brief")}
-                  >
-                    {ui.briefMode}
-                  </button>
-                  <button
-                    type="button"
-                    className={`mode-switch-button ${activeMode === "inspect" ? "mode-switch-button-active" : ""}`}
-                    onClick={() => setActiveMode("inspect")}
-                  >
-                    {ui.inspectMode}
-                  </button>
+              <div className="inspect-hero-status">
+                <div className="summary-status-row">
+                  <span className="summary-status">{dashboardData.executionMode}</span>
+                  <span className="summary-subtle">{dashboardData.provider}</span>
+                  <span className="summary-subtle">{dashboardData.language}</span>
                 </div>
-                <label className="locale-switch">
-                  <span>{ui.interfaceLanguage}</span>
-                  <select value={interfaceLocale} onChange={(event) => setInterfaceLocale(event.target.value)}>
-                    <option value="de">{ui.german}</option>
-                    <option value="en">{ui.english}</option>
-                  </select>
-                </label>
               </div>
             </div>
 
@@ -816,13 +797,6 @@ function App() {
                     ))}
                   </select>
                 </label>
-              </div>
-              <div className="inspect-hero-status">
-                <div className="summary-status-row">
-                  <span className="summary-status">{dashboardData.executionMode}</span>
-                  <span className="summary-subtle">{dashboardData.provider}</span>
-                  <span className="summary-subtle">{dashboardData.language}</span>
-                </div>
               </div>
             </div>
           </header>
