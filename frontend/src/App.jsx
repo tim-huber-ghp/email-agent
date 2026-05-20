@@ -439,6 +439,12 @@ function App() {
     dashboardData?.allEmails.find((email) => email.id === selectedEmailId)
     ?? dashboardData?.allEmails[0]
     ?? null;
+  const hasInboxMessages = (dashboardData?.inbox.length ?? 0) > 0;
+  const hasActions = (dashboardData?.actions.length ?? 0) > 0;
+  const hasDeadlines = (dashboardData?.deadlines.length ?? 0) > 0;
+  const hasMeetings = (dashboardData?.meetings.length ?? 0) > 0;
+  const hasSubscriptions = (dashboardData?.subscriptions.length ?? 0) > 0;
+  const isBriefMostlyEmpty = !hasInboxMessages && !hasActions && !hasDeadlines && !hasMeetings && !hasSubscriptions;
   const inspectTabs = [
     ["run", ui.inspectRunTab],
     ["workflow", ui.inspectWorkflowTab],
@@ -621,7 +627,7 @@ function App() {
           <main className="brief-stack">
           <section className="brief-grid">
             <div className="dashboard-column dashboard-column-primary">
-              <section className="panel panel-spotlight">
+              <section className={`panel panel-spotlight ${!hasInboxMessages ? "panel-empty-quiet" : ""}`}>
                 <div className="panel-heading">
                   <div>
                     <span className="section-kicker">{ui.inboxFocus}</span>
@@ -631,6 +637,7 @@ function App() {
                     <button
                       type="button"
                       className="section-toggle"
+                      disabled={!hasInboxMessages}
                       onClick={() => setActiveSheet("email-list")}
                     >
                       {ui.openAllEmails}
@@ -673,7 +680,7 @@ function App() {
             </div>
 
             <div className="dashboard-column dashboard-column-secondary">
-              <section className="panel panel-emphasis">
+              <section className={`panel panel-emphasis ${!hasActions ? "panel-empty-quiet" : ""}`}>
                 <div className="panel-heading">
                   <div>
                     <span className="section-kicker">{ui.actionBoard}</span>
@@ -694,8 +701,8 @@ function App() {
             </div>
           </section>
 
-          <section className="signal-band">
-            <section className="panel signal-panel">
+          <section className={`signal-band ${isBriefMostlyEmpty ? "signal-band-empty" : ""}`}>
+            <section className={`panel signal-panel ${!hasDeadlines ? "panel-empty-quiet" : ""}`}>
               <div className="panel-heading">
                 <div>
                   <span className="section-kicker">{ui.deadlines}</span>
@@ -717,7 +724,7 @@ function App() {
               )}
             </section>
 
-            <section className="panel signal-panel">
+            <section className={`panel signal-panel ${!hasMeetings ? "panel-empty-quiet" : ""}`}>
               <div className="panel-heading">
                 <div>
                   <span className="section-kicker">{ui.meetings}</span>
@@ -739,7 +746,7 @@ function App() {
               )}
             </section>
 
-            <section className="panel signal-panel">
+            <section className={`panel signal-panel ${!hasSubscriptions ? "panel-empty-quiet" : ""}`}>
               <div className="panel-heading">
                 <div>
                   <span className="section-kicker">{ui.subscriptions}</span>
