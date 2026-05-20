@@ -576,51 +576,49 @@ function App() {
                     {ui.emailCountFound(dashboardData.metadata.emailCount)}
                   </p>
                 </div>
+              </div>
 
-                <div className="hero-summary-frame">
-                  <p className="hero-copy">{dashboardData.overview}</p>
+              <section className="hero-stats-panel">
+                <div className="signal-section-header">
+                  <div>
+                    <span className="section-kicker">{ui.runOverview}</span>
+                  </div>
                 </div>
+                <div className="hero-stat-row">
+                  {dashboardData.stats.map((stat) => (
+                    <article className="hero-stat-card" key={stat.label}>
+                      <span>{stat.label}</span>
+                      <strong>{stat.value}</strong>
+                    </article>
+                  ))}
+                </div>
+              </section>
+
+              <div className="hero-summary-frame">
+                <p className="hero-copy">{dashboardData.overview}</p>
               </div>
 
-              <div className="hero-brief-sidebar">
-                <section className="hero-stats-panel">
-                  <div className="signal-section-header">
-                    <div>
-                      <span className="section-kicker">{ui.runOverview}</span>
-                    </div>
+              <section className="signal-section signal-section-emphasis hero-launch-section">
+                <div className="signal-section-header">
+                  <div>
+                    <span className="section-kicker">{ui.newRun}</span>
+                    <p className="signal-section-copy">{ui.launchHint}</p>
                   </div>
-                  <div className="hero-stat-row">
-                    {dashboardData.stats.map((stat) => (
-                      <article className="hero-stat-card" key={stat.label}>
-                        <span>{stat.label}</span>
-                        <strong>{stat.value}</strong>
-                      </article>
-                    ))}
-                  </div>
-                </section>
+                </div>
 
-                <section className="signal-section signal-section-emphasis hero-launch-section">
-                  <div className="signal-section-header">
-                    <div>
-                      <span className="section-kicker">{ui.newRun}</span>
-                      <p className="signal-section-copy">{ui.launchHint}</p>
-                    </div>
-                  </div>
-
-                  <RunLauncher
-                    ui={ui}
-                    runProvider={runProvider}
-                    setRunProvider={setRunProvider}
-                    triggerDate={triggerDate}
-                    setTriggerDate={setTriggerDate}
-                    isRunning={isRunning}
-                    onRun={handleRunTrigger}
-                    error={runActionError}
-                    message={runActionMessage}
-                    compact
-                  />
-                </section>
-              </div>
+                <RunLauncher
+                  ui={ui}
+                  runProvider={runProvider}
+                  setRunProvider={setRunProvider}
+                  triggerDate={triggerDate}
+                  setTriggerDate={setTriggerDate}
+                  isRunning={isRunning}
+                  onRun={handleRunTrigger}
+                  error={runActionError}
+                  message={runActionMessage}
+                  compact
+                />
+              </section>
             </div>
           </header>
 

@@ -227,11 +227,15 @@ body {
 
 .hero-grid-briefing {
   grid-template-columns: minmax(0, 1.08fr) minmax(380px, 0.92fr);
+  grid-template-areas:
+    "main stats"
+    "summary launch";
   align-items: start;
 }
 
 .hero-main-stack-brief {
   max-width: none;
+  grid-area: main;
 }
 
 .hero-brief-topline {
@@ -245,12 +249,6 @@ body {
   display: grid;
   gap: 6px;
   max-width: 320px;
-}
-
-.hero-brief-sidebar {
-  display: grid;
-  gap: 14px;
-  align-content: start;
 }
 
 h1,
@@ -304,6 +302,7 @@ h3 {
 }
 
 .hero-summary-frame {
+  grid-area: summary;
   max-width: none;
   margin-top: 0;
   padding: 22px 24px;
@@ -314,6 +313,7 @@ h3 {
 }
 
 .hero-stats-panel {
+  grid-area: stats;
   padding: 18px 20px;
   border-radius: 24px;
   background: linear-gradient(180deg, rgba(251, 248, 242, 0.88) 0%, rgba(247, 242, 234, 0.76) 100%);
@@ -356,6 +356,7 @@ h3 {
 }
 
 .hero-launch-section {
+  grid-area: launch;
   max-width: none;
 }
 
@@ -1587,6 +1588,10 @@ h3 {
 
   .hero-brief-topline {
     flex-direction: column;
+  }
+
+  .hero-brief-sidebar {
+    margin-top: 0;
   }
 
   .run-picker-brief {
