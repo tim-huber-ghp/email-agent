@@ -891,7 +891,7 @@ h3 {
 }
 
 .brief-stack {
-  margin-top: 10px;
+  margin-top: clamp(18px, 2.4vw, 30px);
 }
 
 .inspect-shell {
