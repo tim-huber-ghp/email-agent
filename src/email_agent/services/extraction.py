@@ -8,7 +8,7 @@ from email_agent.models.email import EmailAssessment, NormalizedEmail
 from email_agent.models.summary import ExtractedDeadline, ExtractedMeeting, ExtractedSubscription
 
 DAY_HINT_PATTERN = re.compile(
-    r"\b(today|tomorrow|monday|tuesday|wednesday|thursday|friday|saturday|sunday)\b",
+    r"\b(today|tomorrow|monday|tuesday|wednesday|thursday|friday|saturday|sunday|heute|morgen|montag|dienstag|mittwoch|donnerstag|freitag|samstag|sonntag)\b",
     re.IGNORECASE,
 )
 TIME_HINT_PATTERN = re.compile(
@@ -299,7 +299,28 @@ def _extract_service_name(email: NormalizedEmail) -> str:
 
 
 def _normalize_match(value: str) -> str:
-    return " ".join(value.split()).capitalize()
+    normalized = " ".join(value.split()).lower()
+    localized = {
+        "today": "Today",
+        "tomorrow": "Tomorrow",
+        "monday": "Monday",
+        "tuesday": "Tuesday",
+        "wednesday": "Wednesday",
+        "thursday": "Thursday",
+        "friday": "Friday",
+        "saturday": "Saturday",
+        "sunday": "Sunday",
+        "heute": "Heute",
+        "morgen": "Morgen",
+        "montag": "Montag",
+        "dienstag": "Dienstag",
+        "mittwoch": "Mittwoch",
+        "donnerstag": "Donnerstag",
+        "freitag": "Freitag",
+        "samstag": "Samstag",
+        "sonntag": "Sonntag",
+    }
+    return localized.get(normalized, normalized.capitalize())
 
 
 def _email_text(email: NormalizedEmail) -> str:

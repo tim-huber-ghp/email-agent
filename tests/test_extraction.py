@@ -79,6 +79,30 @@ def test_extract_meetings_picks_up_meeting_signal_and_zoom_location() -> None:
     assert meetings[0].needs_response is True
 
 
+def test_extract_meetings_supports_german_day_hints() -> None:
+    email = _email(
+        email_id="msg-2-de",
+        subject="Besprechung morgen",
+        snippet="Bitte bestätige den Termin morgen um 15 Uhr.",
+        body_preview="Zoom-Link folgt. Bitte morgen teilnehmen.",
+        labels=["calendar"],
+    )
+    assessments = [
+        EmailAssessment(
+            email_id="msg-2-de",
+            label="meeting",
+            importance_score=70,
+            reason="Sieht nach einer Besprechung aus.",
+            needs_action=True,
+        )
+    ]
+
+    meetings = extract_meetings([email], assessments)
+
+    assert len(meetings) == 1
+    assert meetings[0].when_hint == "Morgen"
+
+
 def test_extract_meetings_skips_negated_meeting_language() -> None:
     email = _email(
         email_id="msg-2b",

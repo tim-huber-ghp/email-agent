@@ -957,6 +957,7 @@ function buildDashboardData(runData, interfaceLocale) {
   const importantEmails = emails.filter((email) => importantIds.has(email.id));
   const assessmentMap = new Map(assessments.map((item) => [item.email_id, item]));
   const provider = runMetadata?.provider ?? importantEmails[0]?.source ?? emails[0]?.source ?? "unknown";
+  const providerDisplay = formatProviderName(provider);
   const locale = interfaceLocale === "de" ? "de" : "en";
   const ui = UI_TEXT[locale];
   const runLanguage = summary.language === "de" ? ui.german : ui.english;
@@ -971,7 +972,7 @@ function buildDashboardData(runData, interfaceLocale) {
         : ui.calmerBrief,
     dateLabel: formatDate(date, locale),
     dateBadge: date,
-    provider: provider.toUpperCase(),
+    provider: providerDisplay,
     language: runLanguage,
     llmProvider: runMetadata?.llm_provider ?? ui.unknown,
     executionMode: formatExecutionMode(runMetadata, summary, assessments, ui),
@@ -1035,7 +1036,7 @@ function buildDashboardData(runData, interfaceLocale) {
       llmFallbackCount: runMetadata?.llm_fallback_count ?? 0,
     },
     previewMeta: [
-      { label: ui.provider, value: provider.toUpperCase() },
+      { label: ui.provider, value: providerDisplay },
       { label: ui.language, value: runLanguage },
       { label: ui.workflowDuration, value: formatDuration(runMetadata?.workflow_duration_ms) },
       { label: ui.totalTokens, value: formatInteger(runMetadata?.llm_total_tokens ?? 0) },
@@ -1153,6 +1154,23 @@ function humanizeStepName(step) {
 
 function formatLabel(label) {
   return label.replace(/_/g, " ");
+}
+
+function formatProviderName(provider) {
+  const normalized = String(provider ?? "").trim().toLowerCase();
+  if (normalized === "webde") {
+    return "WEB.DE";
+  }
+  if (normalized === "gmail") {
+    return "Gmail";
+  }
+  if (normalized === "mock") {
+    return "Mock";
+  }
+  if (!normalized) {
+    return "Unknown";
+  }
+  return provider.toUpperCase();
 }
 
 function detectExecutionMode(summary, assessments, ui) {
