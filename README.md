@@ -30,7 +30,7 @@ This project is designed as a small but credible AI product:
 - localized output in English or German
 - persisted run artifacts under `data/runs/YYYY-MM-DD/`
 - frontend dashboard for reviewing saved runs
-- frontend-triggered runs with provider and date selection
+- frontend-triggered runs with provider and date selection for `mock`, `gmail`, and `web.de`
 - frontend interface language switch between English and German
 - offline evaluation harness with:
   - easy curated dataset
@@ -123,12 +123,15 @@ Use these from the repo root:
 
 ```bash
 make api
+make webde-list-folders
 make run-gmail
 make run-webde
 make run-mock
 make run-mock-fast
 make run-eval
 make prepare-real-eval
+make prepare-real-gmail-eval
+make prepare-real-webde-eval
 make finalize-real-eval
 make frontend
 ```
@@ -198,6 +201,8 @@ Then add multiple folders if needed, for example:
 WEBDE_IMAP_FOLDERS=INBOX,Unbekannt
 ```
 
+The provider reads only the folders listed in `WEBDE_IMAP_FOLDERS`. If WEB.DE sorts mail into folders such as `Unbekannt`, add them explicitly.
+
 ## LLM Setup
 
 The app supports:
@@ -236,6 +241,7 @@ It currently shows:
 
 - summary headline and overview
 - frontend trigger controls for provider and run date
+- provider switching between `mock`, `gmail`, and `web.de`
 - important emails
 - action items
 - deadlines
@@ -287,11 +293,26 @@ Or explicitly:
 
 ### Real-email evaluation flow
 
-1. export anonymized Gmail examples:
+1. export anonymized real-email examples:
 
 ```bash
-make prepare-real-eval
+make prepare-real-gmail-eval
 ```
+
+Or for WEB.DE:
+
+```bash
+make prepare-real-webde-eval
+```
+
+Both commands accept an optional date override:
+
+```bash
+make prepare-real-gmail-eval DATE=2026-05-19
+make prepare-real-webde-eval DATE=2026-05-19
+```
+
+If `DATE` is omitted, they use the current day.
 
 2. review the generated draft in:
 
@@ -309,7 +330,7 @@ make finalize-real-eval
 
 ```bash
 .venv/bin/python -m email_agent.cli.main evaluate \
-  --dataset data/eval/labeled_emails_real_<YYYY-MM-DD>.json \
+  --dataset data/eval/labeled_emails_real_<provider>_<YYYY-MM-DD>.json \
   --mode both
 ```
 
@@ -342,6 +363,7 @@ Important notes:
 - do not commit `.env`
 - do not commit Gmail OAuth credentials
 - do not commit Gmail tokens
+- do not commit WEB.DE credentials or app-specific passwords
 - be careful with `data/runs/` if it contains real inbox content
 - keep `data/eval/drafts/` local only
 - keep `data/eval/labeled_emails_real_*.json` local unless you intentionally curate a sharable version

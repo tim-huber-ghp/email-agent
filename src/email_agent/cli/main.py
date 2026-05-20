@@ -220,8 +220,8 @@ def evaluate(
         )
 
 
-@app.command("prepare-real-eval")
-def prepare_real_eval(
+@app.command("prepare-real-gmail-eval")
+def prepare_real_gmail_eval(
     run_date: str | None = typer.Option(
         None,
         help="Date to fetch from Gmail in YYYY-MM-DD format. Defaults to today.",
@@ -233,37 +233,53 @@ def prepare_real_eval(
 ) -> None:
     """Export anonymized Gmail examples into a draft evaluation dataset."""
 
-    from email_agent.evaluation import export_real_email_drafts
     from email_agent.providers.gmail import GmailProvider
 
-    settings = get_settings()
-    is_german = settings.language == "de"
-    target_date = run_date or date.today().isoformat()
-    provider = GmailProvider(settings)
-    raw_emails = provider.fetch_emails_for_day(date.fromisoformat(target_date))
-
-    if output:
-        output_path = Path(output)
-    else:
-        output_path = (
-            settings.data_dir / "eval" / "drafts" / f"real_email_candidates_{target_date}.json"
-        )
-
-    saved_path = export_real_email_drafts(raw_emails, output_path)
-
-    typer.echo(f"{_label('Date', 'Datum', is_german)}: {target_date}")
-    typer.echo(f"{_label('Examples', 'Beispiele', is_german)}: {len(raw_emails)}")
-    typer.echo(
-        f"{_label('Saved anonymized draft dataset to', 'Anonymisierten Entwurfsdatensatz gespeichert unter', is_german)}: "
-        f"{saved_path}"
+    _prepare_real_eval_with_provider(
+        provider_name="gmail",
+        run_date=run_date,
+        output=output,
+        provider_factory=GmailProvider,
     )
-    typer.echo(
-        _label(
-            "Next: review the heuristic_* suggestions and fill your final expected_* labels in a copied labeled dataset.",
-            "Als Nächstes: prüfe die heuristic_*-Vorschläge und trage danach deine finalen expected_*-Labels in eine kopierte Label-Datei ein.",
-            is_german,
-        )
+
+
+@app.command("prepare-real-webde-eval")
+def prepare_real_webde_eval(
+    run_date: str | None = typer.Option(
+        None,
+        help="Date to fetch from WEB.DE in YYYY-MM-DD format. Defaults to today.",
+    ),
+    output: str | None = typer.Option(
+        None,
+        help="Optional output path for the anonymized draft dataset.",
+    ),
+) -> None:
+    """Export anonymized WEB.DE examples into a draft evaluation dataset."""
+
+    from email_agent.providers.webde import WebDeProvider
+
+    _prepare_real_eval_with_provider(
+        provider_name="webde",
+        run_date=run_date,
+        output=output,
+        provider_factory=WebDeProvider,
     )
+
+
+@app.command("prepare-real-eval")
+def prepare_real_eval_legacy(
+    run_date: str | None = typer.Option(
+        None,
+        help="Date to fetch from Gmail in YYYY-MM-DD format. Defaults to today.",
+    ),
+    output: str | None = typer.Option(
+        None,
+        help="Optional output path for the anonymized draft dataset.",
+    ),
+) -> None:
+    """Backward-compatible alias for prepare-real-gmail-eval."""
+
+    prepare_real_gmail_eval(run_date=run_date, output=output)
 
 
 @app.command("finalize-real-eval")
@@ -313,6 +329,49 @@ def _print_metric(label: str, metric: object) -> None:
         f"precision {metric.precision:.3f}, "
         f"recall {metric.recall:.3f}, "
         f"tp {metric.true_positives}, fp {metric.false_positives}, fn {metric.false_negatives}"
+    )
+
+
+def _prepare_real_eval_with_provider(
+    *,
+    provider_name: str,
+    run_date: str | None,
+    output: str | None,
+    provider_factory: object,
+) -> None:
+    from email_agent.evaluation import export_real_email_drafts
+
+    settings = get_settings()
+    is_german = settings.language == "de"
+    target_date = run_date or date.today().isoformat()
+    provider = provider_factory(settings)
+    raw_emails = provider.fetch_emails_for_day(date.fromisoformat(target_date))
+
+    if output:
+        output_path = Path(output)
+    else:
+        output_path = (
+            settings.data_dir
+            / "eval"
+            / "drafts"
+            / f"real_email_candidates_{provider_name}_{target_date}.json"
+        )
+
+    saved_path = export_real_email_drafts(raw_emails, output_path)
+
+    typer.echo(f"{_label('Provider', 'Anbieter', is_german)}: {provider_name}")
+    typer.echo(f"{_label('Date', 'Datum', is_german)}: {target_date}")
+    typer.echo(f"{_label('Examples', 'Beispiele', is_german)}: {len(raw_emails)}")
+    typer.echo(
+        f"{_label('Saved anonymized draft dataset to', 'Anonymisierten Entwurfsdatensatz gespeichert unter', is_german)}: "
+        f"{saved_path}"
+    )
+    typer.echo(
+        _label(
+            "Next: review the heuristic_* suggestions and fill your final expected_* labels in a copied labeled dataset.",
+            "Als Nächstes: prüfe die heuristic_*-Vorschläge und trage danach deine finalen expected_*-Labels in eine kopierte Label-Datei ein.",
+            is_german,
+        )
     )
 
 
