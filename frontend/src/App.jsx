@@ -1007,7 +1007,7 @@ function RunLauncher({
           <input type="date" value={triggerDate} onChange={(event) => setTriggerDate(event.target.value)} />
         </label>
 
-        <button type="button" className="inspector-toggle run-trigger-button" onClick={onRun} disabled={isRunning}>
+        <button type="button" className="run-trigger-button" onClick={onRun} disabled={isRunning}>
           {isRunning ? ui.runningRun : ui.runNow}
         </button>
       </div>
