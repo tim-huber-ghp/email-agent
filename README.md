@@ -1,6 +1,6 @@
 # Email Agent
 
-An end-to-end Gmail email summary agent built with Python, LangGraph, and React.
+An end-to-end email summary agent built with Python, LangGraph, and React.
 
 I built this project to turn daily email overload into a short, actionable summary, with structured signals such as subscriptions, deadlines, and follow-ups.
 
@@ -11,6 +11,7 @@ It reads daily emails, classifies what matters, extracts structured signals such
 This project is designed as a small but credible AI product:
 
 - real Gmail OAuth integration
+- WEB.DE IMAP integration
 - LangGraph workflow orchestration
 - hybrid heuristic and LLM classification paths
 - structured extraction for deadlines, meetings, and subscriptions
@@ -20,6 +21,7 @@ This project is designed as a small but credible AI product:
 ## Current Features
 
 - Gmail read-only integration via Google OAuth
+- WEB.DE read-only integration via IMAP
 - mock provider for safe local demos
 - LangGraph workflow with fallback routing
 - heuristic classification and extraction
@@ -40,7 +42,7 @@ This project is designed as a small but credible AI product:
 
 High-level flow:
 
-1. fetch emails from `gmail` or `mock`
+1. fetch emails from `gmail`, `webde`, or `mock`
 2. normalize to a shared email schema
 3. filter low-value messages
 4. classify importance with heuristics or an LLM
@@ -65,7 +67,7 @@ src/email_agent/
   graph/       # LangGraph workflow
   models/      # typed schemas
   prompts/     # LLM prompts
-  providers/   # gmail + mock
+  providers/   # gmail + webde + mock
   services/    # heuristics, extraction, llm logic
   storage/     # persisted run artifacts
 
@@ -122,6 +124,7 @@ Use these from the repo root:
 ```bash
 make api
 make run-gmail
+make run-webde
 make run-mock
 make run-mock-fast
 make run-eval
@@ -161,6 +164,38 @@ The Gmail token is stored locally at:
 
 ```text
 data/auth/gmail_token.json
+```
+
+## WEB.DE Setup
+
+To use a WEB.DE mailbox:
+
+1. Enable IMAP access in your WEB.DE account settings.
+2. Add these values to `.env`:
+
+```env
+WEBDE_EMAIL=your.name@web.de
+WEBDE_PASSWORD=your_password_or_app_password
+WEBDE_IMAP_FOLDERS=INBOX
+```
+
+3. If you use WEB.DE two-factor authentication, use an app-specific password instead of your normal login password.
+4. Run:
+
+```bash
+make run-webde
+```
+
+To inspect your WEB.DE IMAP folders and find names like `Unbekannt`, run:
+
+```bash
+make webde-list-folders
+```
+
+Then add multiple folders if needed, for example:
+
+```env
+WEBDE_IMAP_FOLDERS=INBOX,Unbekannt
 ```
 
 ## LLM Setup

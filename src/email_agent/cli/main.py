@@ -1,5 +1,7 @@
 """CLI entrypoint."""
 
+from __future__ import annotations
+
 import warnings
 from datetime import date
 from pathlib import Path
@@ -7,16 +9,6 @@ from pathlib import Path
 import typer
 
 from email_agent.config import Settings, get_settings
-from email_agent.evaluation import (
-    EvaluationReport,
-    export_real_email_drafts,
-    finalize_real_email_dataset,
-    run_comparison_evaluation,
-    run_heuristic_evaluation,
-    run_llm_evaluation,
-    save_evaluation_report,
-    save_evaluation_reports,
-)
 
 app = typer.Typer(help="Email summary agent CLI.", no_args_is_help=True)
 
@@ -47,7 +39,7 @@ def main() -> None:
 @app.command()
 def summarize(
     run_date: str | None = None,
-    provider: str = typer.Option("mock", help="Email provider to use: mock or gmail."),
+    provider: str = typer.Option("mock", help="Email provider to use: mock, gmail, or webde."),
 ) -> None:
     """Run the summary flow."""
 
@@ -147,6 +139,20 @@ def gmail_auth() -> None:
     )
 
 
+@app.command("webde-list-folders")
+def webde_list_folders() -> None:
+    """List available IMAP folders for the configured WEB.DE account."""
+
+    from email_agent.providers.webde import WebDeProvider
+
+    settings = get_settings()
+    is_german = settings.language == "de"
+    folders = WebDeProvider(settings).list_folders()
+    typer.echo(_label("WEB.DE IMAP folders:", "WEB.DE-IMAP-Ordner:", is_german))
+    for folder in folders:
+        typer.echo(f"- {folder}")
+
+
 @app.command()
 def evaluate(
     dataset: str = typer.Option(
@@ -159,6 +165,11 @@ def evaluate(
     ),
 ) -> None:
     """Run the offline evaluation harness on labeled emails."""
+
+    from email_agent.evaluation import (
+        save_evaluation_report,
+        save_evaluation_reports,
+    )
 
     settings = get_settings()
     is_german = settings.language == "de"
@@ -222,6 +233,7 @@ def prepare_real_eval(
 ) -> None:
     """Export anonymized Gmail examples into a draft evaluation dataset."""
 
+    from email_agent.evaluation import export_real_email_drafts
     from email_agent.providers.gmail import GmailProvider
 
     settings = get_settings()
@@ -267,6 +279,8 @@ def finalize_real_eval(
 ) -> None:
     """Convert a reviewed draft dataset into the final eval schema."""
 
+    from email_agent.evaluation import finalize_real_email_dataset
+
     settings = get_settings()
     is_german = settings.language == "de"
     draft_path = Path(draft)
@@ -304,7 +318,13 @@ def _print_metric(label: str, metric: object) -> None:
 
 def _run_evaluation_mode(
     mode: str, dataset_path: Path, settings: Settings
-) -> list[EvaluationReport]:
+) -> list[object]:
+    from email_agent.evaluation import (
+        run_comparison_evaluation,
+        run_heuristic_evaluation,
+        run_llm_evaluation,
+    )
+
     normalized_mode = mode.lower()
     if normalized_mode == "heuristic":
         return [run_heuristic_evaluation(dataset_path)]

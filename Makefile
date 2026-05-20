@@ -1,10 +1,16 @@
-.PHONY: api run-gmail run-mock run-mock-fast run-eval prepare-real-eval finalize-real-eval frontend
+.PHONY: api webde-list-folders run-gmail run-webde run-mock run-mock-fast run-eval prepare-real-eval finalize-real-eval frontend
 
 api:
 	.venv/bin/python -m email_agent.cli.main serve-api
 
+webde-list-folders:
+	.venv/bin/python -m email_agent.cli.main webde-list-folders
+
 run-gmail:
 	.venv/bin/python -m email_agent.cli.main summarize --provider gmail
+
+run-webde:
+	.venv/bin/python -m email_agent.cli.main summarize --provider webde
 
 run-mock:
 	.venv/bin/python -m email_agent.cli.main summarize --provider mock

@@ -14,7 +14,7 @@ from email_agent.api.run_artifacts import list_runs, read_run
 from email_agent.config import Settings
 from email_agent.graph.workflow import run_workflow
 
-SUPPORTED_PROVIDERS = {"mock", "gmail"}
+SUPPORTED_PROVIDERS = {"mock", "gmail", "webde"}
 _RUN_LOCK = threading.Lock()
 
 
@@ -80,7 +80,7 @@ class EmailAgentAPIHandler(BaseHTTPRequestHandler):
             payload = self._read_json_body()
             provider = str(payload.get("provider", "mock"))
             if provider not in SUPPORTED_PROVIDERS:
-                raise ValueError("Provider must be one of: gmail, mock.")
+                raise ValueError("Provider must be one of: gmail, mock, webde.")
 
             requested_date = payload.get("run_date")
             run_date = self._normalize_run_date(requested_date)

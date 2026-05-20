@@ -14,6 +14,7 @@ from email_agent.models.run_metadata import RunMetadata
 from email_agent.models.summary import ActionItem, DailySummary
 from email_agent.providers.gmail import GmailProvider
 from email_agent.providers.mock import MockEmailProvider
+from email_agent.providers.webde import WebDeProvider
 from email_agent.services.extraction import (
     extract_deadlines,
     extract_meetings,
@@ -42,6 +43,8 @@ def load_emails(state: AgentState, settings: Settings) -> AgentState:
 
     if provider_name == "gmail":
         provider = GmailProvider(settings)
+    elif provider_name == "webde":
+        provider = WebDeProvider(settings)
     elif provider_name == "mock":
         provider = MockEmailProvider(settings.data_dir / "fixtures" / "mock_emails.json")
     else:

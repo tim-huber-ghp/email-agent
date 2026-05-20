@@ -46,6 +46,11 @@ class Settings(BaseSettings):
         default=Path("./data/auth/gmail_token.json"),
         alias="GMAIL_TOKEN_FILE",
     )
+    webde_email: str | None = Field(default=None, alias="WEBDE_EMAIL")
+    webde_password: str | None = Field(default=None, alias="WEBDE_PASSWORD")
+    webde_imap_host: str = Field(default="imap.web.de", alias="WEBDE_IMAP_HOST")
+    webde_imap_port: int = Field(default=993, alias="WEBDE_IMAP_PORT")
+    webde_imap_folders: str = Field(default="INBOX", alias="WEBDE_IMAP_FOLDERS")
 
     model_config = SettingsConfigDict(
         env_file=".env",

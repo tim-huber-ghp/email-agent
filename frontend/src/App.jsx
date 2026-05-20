@@ -95,6 +95,7 @@ const UI_TEXT = {
     no: "No",
     gmailLabel: "gmail",
     mockLabel: "mock",
+    webdeLabel: "web.de",
     noPreview: "No preview available.",
     savedSummary: "Saved summary",
     structuredExtraction: "Structured extraction",
@@ -211,6 +212,7 @@ const UI_TEXT = {
     no: "Nein",
     gmailLabel: "gmail",
     mockLabel: "mock",
+    webdeLabel: "web.de",
     noPreview: "Keine Vorschau verfügbar.",
     savedSummary: "Gespeicherte Zusammenfassung",
     structuredExtraction: "Strukturierte Extraktion",
@@ -850,6 +852,7 @@ function RunLauncher({
           <select value={runProvider} onChange={(event) => setRunProvider(event.target.value)}>
             <option value="mock">{ui.mockLabel}</option>
             <option value="gmail">{ui.gmailLabel}</option>
+            <option value="webde">{ui.webdeLabel}</option>
           </select>
         </label>
 
