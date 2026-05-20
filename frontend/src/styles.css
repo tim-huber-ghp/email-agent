@@ -919,15 +919,53 @@ h3 {
 
 .inspect-hero-grid {
   display: grid;
-  grid-template-columns: minmax(280px, 1fr);
+  grid-template-columns: minmax(280px, 420px) minmax(0, 1fr);
   gap: 18px;
   align-items: start;
-  max-width: 420px;
 }
 
 .inspect-hero-run {
   display: grid;
   gap: 18px;
+}
+
+.inspect-hero-status {
+  display: flex;
+  justify-content: flex-end;
+  align-items: start;
+}
+
+.inspect-hero-status .summary-status-row {
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 14px;
+  margin-top: 0;
+  min-height: 0;
+}
+
+.inspect-hero-status .summary-status {
+  min-height: 0;
+  padding: 0;
+  border-radius: 0;
+  background: transparent;
+  color: var(--accent-warm-deep);
+  font-size: 0.76rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+}
+
+.inspect-hero-status .summary-subtle {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.inspect-hero-status .summary-subtle::before {
+  content: "";
+  width: 4px;
+  height: 4px;
+  border-radius: 999px;
+  background: rgba(47, 42, 38, 0.28);
 }
 
 .brief-grid {
@@ -1535,6 +1573,11 @@ h3 {
 
   .inspect-tab-shell,
   .inspect-tab-row {
+    justify-content: flex-start;
+  }
+
+  .inspect-hero-status,
+  .inspect-hero-status .summary-status-row {
     justify-content: flex-start;
   }
 

@@ -818,6 +818,8 @@ function App() {
                     ))}
                   </select>
                 </label>
+              </div>
+              <div className="inspect-hero-status">
                 <div className="summary-status-row">
                   <span className="summary-status">{dashboardData.executionMode}</span>
                   <span className="summary-subtle">{dashboardData.provider}</span>
