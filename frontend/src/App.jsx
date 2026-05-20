@@ -22,15 +22,14 @@ const UI_TEXT = {
     runProvider: "Run with",
     runDate: "Run date",
     interfaceLanguage: "Interface",
-    briefMode: "Brief",
-    inspectMode: "Inspect",
+    briefMode: "Overview",
+    inspectMode: "Inspection",
     inspectTitle: "Deep inspection",
     openInspectMode: "Open inspect mode",
     briefHeadline: "Your day in email",
     currentRun: "Current summary",
     newRun: "New summary",
     launchHint: "Choose a provider and date, then create a fresh summary.",
-    livePill: "Run dashboard",
     signalLabel: "Daily summary",
     runOverview: "Overview",
     close: "Close",
@@ -149,6 +148,14 @@ const UI_TEXT = {
     inspectEmailsTab: "Emails",
     inspectEvidenceTab: "Evidence",
     inspectProjectTab: "Project",
+    categoryLabels: {
+      urgent: "Urgent",
+      needs_reply: "Needs reply",
+      meeting: "Meeting",
+      finance: "Finance",
+      info: "Info",
+      low_priority: "Low priority",
+    },
     heuristicOrFallback: "Heuristic or fallback",
     llmAssisted: "LLM-assisted",
     runModeMixed: (classification, summary) => `${classification} / ${summary}`,
@@ -170,15 +177,14 @@ const UI_TEXT = {
     runProvider: "Ausführen mit",
     runDate: "Datum",
     interfaceLanguage: "Sprache",
-    briefMode: "Brief",
-    inspectMode: "Inspect",
+    briefMode: "Übersicht",
+    inspectMode: "Inspektion",
     inspectTitle: "Technische Einsicht",
     openInspectMode: "Inspect-Modus öffnen",
     briefHeadline: "Dein Tag in E-Mails",
     currentRun: "Aktuelle Zusammenfassung",
     newRun: "Neue Zusammenfassung",
     launchHint: "Quelle und Datum wählen und dann eine neue Zusammenfassung erstellen.",
-    livePill: "Übersicht",
     signalLabel: "Tageszusammenfassung",
     runOverview: "Überblick",
     close: "Schließen",
@@ -297,6 +303,14 @@ const UI_TEXT = {
     inspectEmailsTab: "E-Mails",
     inspectEvidenceTab: "Evidence",
     inspectProjectTab: "Projekt",
+    categoryLabels: {
+      urgent: "Dringend",
+      needs_reply: "Antwort nötig",
+      meeting: "Besprechung",
+      finance: "Finanzen",
+      info: "Info",
+      low_priority: "Niedrige Priorität",
+    },
     heuristicOrFallback: "Heuristik oder Fallback",
     llmAssisted: "LLM-gestützt",
     runModeMixed: (classification, summary) => `${classification} / ${summary}`,
@@ -486,7 +500,6 @@ function App() {
             <div className="eyebrow-row">
               <span className="eyebrow">Email Agent</span>
               <div className="hero-top-actions">
-                <span className="live-pill">{ui.livePill}</span>
                 <div className="mode-switch" role="tablist" aria-label={ui.interfaceLanguage}>
                   <button
                     type="button"
@@ -1288,7 +1301,7 @@ function buildDashboardData(runData, interfaceLocale) {
       id: email.id,
       sender: email.sender,
       subject: email.subject,
-      tag: formatLabel(assessmentMap.get(email.id)?.label ?? "info"),
+      tag: formatLabel(assessmentMap.get(email.id)?.label ?? "info", ui),
       summary: email.snippet || email.body_preview || ui.noPreview,
       reason: assessmentMap.get(email.id)?.reason ?? ui.unknown,
     })),
@@ -1298,7 +1311,7 @@ function buildDashboardData(runData, interfaceLocale) {
         id: email.id,
         sender: email.sender,
         subject: email.subject,
-        tag: formatLabel(assessment?.label ?? "info"),
+        tag: formatLabel(assessment?.label ?? "info", ui),
         preview: email.snippet || email.body_preview || ui.noPreview,
         bodyPreview: email.body_preview || "",
         receivedAt: formatTimestamp(email.received_at, locale, ui),
@@ -1454,8 +1467,9 @@ function humanizeStepName(step) {
     .replace(/\b\w/g, (char) => char.toUpperCase());
 }
 
-function formatLabel(label) {
-  return label.replace(/_/g, " ");
+function formatLabel(label, ui) {
+  const normalized = String(label ?? "").toLowerCase();
+  return ui?.categoryLabels?.[normalized] ?? normalized.replace(/_/g, " ");
 }
 
 function formatProviderName(provider) {
