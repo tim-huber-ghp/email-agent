@@ -146,8 +146,12 @@ const UI_TEXT = {
     inspectRunTab: "Overview",
     inspectWorkflowTab: "Workflow",
     inspectEmailsTab: "Emails",
-    inspectEvidenceTab: "Evidence",
-    inspectProjectTab: "Project",
+    inspectEvidenceTab: "Details",
+    inspectWorkspace: "Workspace",
+    noEmailsTabTitle: "No emails available",
+    noEmailsTabBody: "This saved summary does not include any emails to inspect yet.",
+    noEvidenceTabTitle: "No email selected",
+    noEvidenceTabBody: "Choose an email in the Emails tab to inspect its details here.",
     categoryLabels: {
       urgent: "Urgent",
       needs_reply: "Needs reply",
@@ -301,8 +305,12 @@ const UI_TEXT = {
     inspectRunTab: "Überblick",
     inspectWorkflowTab: "Ablauf",
     inspectEmailsTab: "E-Mails",
-    inspectEvidenceTab: "Evidence",
-    inspectProjectTab: "Projekt",
+    inspectEvidenceTab: "Details",
+    inspectWorkspace: "Arbeitsbereich",
+    noEmailsTabTitle: "Keine E-Mails vorhanden",
+    noEmailsTabBody: "Diese gespeicherte Zusammenfassung enthält derzeit keine E-Mails zur Prüfung.",
+    noEvidenceTabTitle: "Keine E-Mail ausgewählt",
+    noEvidenceTabBody: "Wähle im Tab E-Mails eine Nachricht aus, um hier ihre Details zu sehen.",
     categoryLabels: {
       urgent: "Dringend",
       needs_reply: "Antwort nötig",
@@ -326,7 +334,7 @@ function App() {
   const [loading, setLoading] = useState(true);
   const [activeSheet, setActiveSheet] = useState(null);
   const [activeMode, setActiveMode] = useState("brief");
-  const [inspectTab, setInspectTab] = useState("emails");
+  const [inspectTab, setInspectTab] = useState("run");
   const [selectedEmailId, setSelectedEmailId] = useState("");
   const [runProvider, setRunProvider] = useState(DEFAULT_RUN_PROVIDER);
   const [triggerDate, setTriggerDate] = useState(DEFAULT_TRIGGER_DATE);
@@ -431,6 +439,13 @@ function App() {
     dashboardData?.allEmails.find((email) => email.id === selectedEmailId)
     ?? dashboardData?.allEmails[0]
     ?? null;
+  const inspectTabs = [
+    ["run", ui.inspectRunTab],
+    ["workflow", ui.inspectWorkflowTab],
+    ["emails", ui.inspectEmailsTab],
+    ["evidence", ui.inspectEvidenceTab],
+  ];
+  const activeInspectTabLabel = inspectTabs.find(([value]) => value === inspectTab)?.[1] ?? ui.inspectRunTab;
 
   if (loading && !runData) {
     return (
@@ -513,7 +528,7 @@ function App() {
                     className={`mode-switch-button ${activeMode === "inspect" ? "mode-switch-button-active" : ""}`}
                     onClick={() => {
                       setActiveMode("inspect");
-                      setInspectTab("emails");
+                      setInspectTab("run");
                     }}
                   >
                     {ui.inspectMode}
@@ -786,7 +801,6 @@ function App() {
 
             <div className="inspect-hero-grid">
               <div className="inspect-hero-run">
-                <div className="signal-label">{ui.currentRun}</div>
                 <label className="run-picker">
                   <span>{ui.savedRun}</span>
                   <select value={selectedRunDate} onChange={handleRunChange}>
@@ -803,173 +817,164 @@ function App() {
                   <span className="summary-subtle">{dashboardData.language}</span>
                 </div>
               </div>
-
-              <div className="inspect-hero-metrics">
-                {dashboardData.previewMeta.map((item) => (
-                  <div key={item.label} className="inspector-mini-card">
-                    <span>{item.label}</span>
-                    <strong>{item.value}</strong>
-                  </div>
-                ))}
-              </div>
             </div>
           </header>
 
           <main className="inspect-shell">
             <section className="panel inspect-panel">
-            <div className="panel-heading inspect-panel-heading">
-              <div>
-                <span className="section-kicker">{ui.inspectMode}</span>
-                <h2>{ui.inspectTitle}</h2>
-              </div>
-              <div className="inspect-tab-row" role="tablist" aria-label={ui.inspectMode}>
-                {[
-                  ["run", ui.inspectRunTab],
-                  ["workflow", ui.inspectWorkflowTab],
-                  ["emails", ui.inspectEmailsTab],
-                  ["evidence", ui.inspectEvidenceTab],
-                  ["project", ui.inspectProjectTab],
-                ].map(([value, label]) => (
-                  <button
-                    key={value}
-                    type="button"
-                    className={`inspect-tab ${inspectTab === value ? "inspect-tab-active" : ""}`}
-                    onClick={() => setInspectTab(value)}
-                  >
-                    {label}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {inspectTab === "run" ? (
-              <div className="inspect-grid">
-                <section className="inspect-section-card">
-                  <span className="section-kicker">{ui.technicalMetadata}</span>
-                  <dl className="meta-grid">
-                    <div><dt>{ui.provider}</dt><dd>{dashboardData.provider}</dd></div>
-                    <div><dt>{ui.language}</dt><dd>{dashboardData.language}</dd></div>
-                    <div><dt>{ui.llm}</dt><dd>{dashboardData.llmProvider}</dd></div>
-                    <div><dt>{ui.execution}</dt><dd>{dashboardData.executionMode}</dd></div>
-                    <div><dt>{ui.startedAt}</dt><dd>{dashboardData.metadata.runStartedAt}</dd></div>
-                    <div><dt>{ui.completedAt}</dt><dd>{dashboardData.metadata.runCompletedAt}</dd></div>
-                    <div><dt>{ui.workflowDuration}</dt><dd>{dashboardData.metadata.workflowDuration}</dd></div>
-                    <div><dt>{ui.estimatedCost}</dt><dd>{dashboardData.metadata.estimatedCost}</dd></div>
-                  </dl>
-                </section>
-
-                <section className="inspect-section-card">
-                  <span className="section-kicker">{ui.runOverview}</span>
-                  <div className="inspector-mini-grid">
-                    {dashboardData.previewMeta.map((item) => (
-                      <div key={item.label} className="inspector-mini-card">
-                        <span>{item.label}</span>
-                        <strong>{item.value}</strong>
-                      </div>
+              <div className="inspect-panel-heading">
+                <div className="inspect-heading-copy">
+                  <span className="section-kicker">{ui.inspectWorkspace}</span>
+                  <h2>{activeInspectTabLabel}</h2>
+                </div>
+                <div className="inspect-tab-shell">
+                  <div className="inspect-tab-row" role="tablist" aria-label={ui.inspectMode}>
+                    {inspectTabs.map(([value, label]) => (
+                      <button
+                        key={value}
+                        type="button"
+                        className={`inspect-tab ${inspectTab === value ? "inspect-tab-active" : ""}`}
+                        onClick={() => setInspectTab(value)}
+                      >
+                        {label}
+                      </button>
                     ))}
                   </div>
-                </section>
-              </div>
-            ) : null}
-
-            {inspectTab === "workflow" ? (
-              <div className="sheet-stack">
-                <p className="sheet-summary">{ui.workflowSummary}</p>
-                <p className="sheet-summary">{ui.stepTimingSummary}</p>
-                <div className="timeline">
-                  {dashboardData.timeline.map((item) => (
-                    <div className="timeline-item" key={item.title}>
-                      <div className={`timeline-dot status-${item.status}`} />
-                      <div>
-                        <h3>{item.title}</h3>
-                        <p>{item.detail}</p>
-                      </div>
-                    </div>
-                  ))}
                 </div>
               </div>
-            ) : null}
-
-            {inspectTab === "emails" ? (
-              <div className="email-explorer">
-                <div className="email-list email-list-scroll">
-                  {dashboardData.allEmails.map((item) => (
-                    <button
-                      key={item.id}
-                      type="button"
-                      className={`email-row ${selectedEmailDetail?.id === item.id ? "email-row-active" : ""}`}
-                      onClick={() => setSelectedEmailId(item.id)}
-                    >
-                      <div className="email-row-topline">
-                        <span className="sender">{item.sender}</span>
-                        <span className={`tag tag-${item.tag.replace(/\s+/g, "-")}`}>{item.tag}</span>
+              <div className="inspect-panel-body">
+                {inspectTab === "run" ? (
+                  <div className="inspect-run-layout">
+                    <section className="inspect-section-card inspect-overview-card">
+                      <div className="inspect-card-header">
+                        <span className="section-kicker">{ui.runOverview}</span>
                       </div>
-                      <strong>{item.subject}</strong>
-                      <p>{item.preview}</p>
-                      <div className="email-row-meta">
-                        <span>{item.receivedAt}</span>
-                        <span>{item.scoreLabel}</span>
+                      <div className="inspector-mini-grid inspector-mini-grid-wide">
+                        {dashboardData.previewMeta.map((item) => (
+                          <div key={item.label} className="inspector-mini-card">
+                            <span>{item.label}</span>
+                            <strong>{item.value}</strong>
+                          </div>
+                        ))}
                       </div>
-                    </button>
-                  ))}
-                </div>
+                    </section>
 
-                {selectedEmailDetail ? (
-                  <section className="inspect-section-card inspect-detail-card">
-                    <EmailDetailContent selectedEmailDetail={selectedEmailDetail} ui={ui} />
-                  </section>
+                    <section className="inspect-section-card inspect-metadata-card">
+                      <div className="inspect-card-header">
+                        <span className="section-kicker">{ui.technicalMetadata}</span>
+                      </div>
+                      <dl className="meta-grid meta-grid-inspect">
+                        <div><dt>{ui.provider}</dt><dd>{dashboardData.provider}</dd></div>
+                        <div><dt>{ui.language}</dt><dd>{dashboardData.language}</dd></div>
+                        <div><dt>{ui.llm}</dt><dd>{dashboardData.llmProvider}</dd></div>
+                        <div><dt>{ui.execution}</dt><dd>{dashboardData.executionMode}</dd></div>
+                        <div><dt>{ui.startedAt}</dt><dd>{dashboardData.metadata.runStartedAt}</dd></div>
+                        <div><dt>{ui.completedAt}</dt><dd>{dashboardData.metadata.runCompletedAt}</dd></div>
+                        <div><dt>{ui.workflowDuration}</dt><dd>{dashboardData.metadata.workflowDuration}</dd></div>
+                        <div><dt>{ui.estimatedCost}</dt><dd>{dashboardData.metadata.estimatedCost}</dd></div>
+                      </dl>
+                    </section>
+                  </div>
                 ) : null}
-              </div>
-            ) : null}
 
-            {inspectTab === "evidence" && selectedEmailDetail ? (
-              <div className="inspect-grid">
-                <section className="inspect-section-card">
-                  <span className="section-kicker">{ui.emailDetail}</span>
-                  <h3>{selectedEmailDetail.subject}</h3>
-                  <p className="sheet-summary">{selectedEmailDetail.sender}</p>
-                  <dl className="email-detail-grid">
-                    <div><dt>{ui.importanceScore}</dt><dd>{selectedEmailDetail.importanceScore}</dd></div>
-                    <div><dt>{ui.needsAction}</dt><dd>{selectedEmailDetail.needsAction}</dd></div>
-                    <div><dt>{ui.confidence}</dt><dd>{selectedEmailDetail.confidenceScore}</dd></div>
-                    <div><dt>{ui.receivedAt}</dt><dd>{selectedEmailDetail.receivedAt}</dd></div>
-                  </dl>
-                </section>
-
-                <section className="inspect-section-card">
-                  <span className="section-kicker">{ui.whyThisMatters}</span>
+                {inspectTab === "workflow" ? (
                   <div className="sheet-stack">
-                    <div className="email-detail-block">
-                      <span className="section-kicker">{ui.reason}</span>
-                      <p className="sheet-summary">{selectedEmailDetail.reason}</p>
-                    </div>
-                    <div className="email-detail-block">
-                      <span className="section-kicker">{ui.uncertainty}</span>
-                      <p className="sheet-summary">
-                        {selectedEmailDetail.uncertaintyNote || ui.noUncertainty}
-                      </p>
-                    </div>
-                    <div className="email-detail-block">
-                      <span className="section-kicker">{ui.bodyPreview}</span>
-                      <p className="sheet-summary">
-                        {selectedEmailDetail.bodyPreview || ui.noBodyPreview}
-                      </p>
+                    <p className="sheet-summary">{ui.workflowSummary}</p>
+                    <p className="sheet-summary">{ui.stepTimingSummary}</p>
+                    <div className="timeline">
+                      {dashboardData.timeline.map((item) => (
+                        <div className="timeline-item" key={item.title}>
+                          <div className={`timeline-dot status-${item.status}`} />
+                          <div>
+                            <h3>{item.title}</h3>
+                            <p>{item.detail}</p>
+                          </div>
+                        </div>
+                      ))}
                     </div>
                   </div>
-                </section>
-              </div>
-            ) : null}
+                ) : null}
 
-            {inspectTab === "project" ? (
-              <div className="sheet-stack">
-                <p className="sheet-summary">{ui.projectSummary}</p>
-                <ul className="story-list story-list-sheet">
-                  <li>{ui.projectBullet1}</li>
-                  <li>{ui.projectBullet2}</li>
-                  <li>{ui.projectBullet3}</li>
-                </ul>
+                {inspectTab === "emails" ? (
+                  dashboardData.allEmails.length > 0 ? (
+                    <div className="email-explorer">
+                      <div className="email-list email-list-scroll">
+                        {dashboardData.allEmails.map((item) => (
+                          <button
+                            key={item.id}
+                            type="button"
+                            className={`email-row ${selectedEmailDetail?.id === item.id ? "email-row-active" : ""}`}
+                            onClick={() => setSelectedEmailId(item.id)}
+                          >
+                            <div className="email-row-topline">
+                              <span className="sender">{item.sender}</span>
+                              <span className={`tag tag-${item.tag.replace(/\s+/g, "-")}`}>{item.tag}</span>
+                            </div>
+                            <strong>{item.subject}</strong>
+                            <p>{item.preview}</p>
+                            <div className="email-row-meta">
+                              <span>{item.receivedAt}</span>
+                              <span>{item.scoreLabel}</span>
+                            </div>
+                          </button>
+                        ))}
+                      </div>
+
+                      {selectedEmailDetail ? (
+                        <section className="inspect-section-card inspect-detail-card">
+                          <EmailDetailContent selectedEmailDetail={selectedEmailDetail} ui={ui} />
+                        </section>
+                      ) : (
+                        <EmptyTabPlaceholder title={ui.noEvidenceTabTitle} body={ui.noEvidenceTabBody} />
+                      )}
+                    </div>
+                  ) : (
+                    <EmptyTabPlaceholder title={ui.noEmailsTabTitle} body={ui.noEmailsTabBody} />
+                  )
+                ) : null}
+
+                {inspectTab === "evidence" ? (
+                  selectedEmailDetail ? (
+                    <div className="inspect-grid">
+                      <section className="inspect-section-card">
+                        <span className="section-kicker">{ui.emailDetail}</span>
+                        <h3>{selectedEmailDetail.subject}</h3>
+                        <p className="sheet-summary">{selectedEmailDetail.sender}</p>
+                        <dl className="email-detail-grid">
+                          <div><dt>{ui.importanceScore}</dt><dd>{selectedEmailDetail.importanceScore}</dd></div>
+                          <div><dt>{ui.needsAction}</dt><dd>{selectedEmailDetail.needsAction}</dd></div>
+                          <div><dt>{ui.confidence}</dt><dd>{selectedEmailDetail.confidenceScore}</dd></div>
+                          <div><dt>{ui.receivedAt}</dt><dd>{selectedEmailDetail.receivedAt}</dd></div>
+                        </dl>
+                      </section>
+
+                      <section className="inspect-section-card">
+                        <span className="section-kicker">{ui.whyThisMatters}</span>
+                        <div className="sheet-stack">
+                          <div className="email-detail-block">
+                            <span className="section-kicker">{ui.reason}</span>
+                            <p className="sheet-summary">{selectedEmailDetail.reason}</p>
+                          </div>
+                          <div className="email-detail-block">
+                            <span className="section-kicker">{ui.uncertainty}</span>
+                            <p className="sheet-summary">
+                              {selectedEmailDetail.uncertaintyNote || ui.noUncertainty}
+                            </p>
+                          </div>
+                          <div className="email-detail-block">
+                            <span className="section-kicker">{ui.bodyPreview}</span>
+                            <p className="sheet-summary">
+                              {selectedEmailDetail.bodyPreview || ui.noBodyPreview}
+                            </p>
+                          </div>
+                        </div>
+                      </section>
+                    </div>
+                  ) : (
+                    <EmptyTabPlaceholder title={ui.noEvidenceTabTitle} body={ui.noEvidenceTabBody} />
+                  )
+                ) : null}
               </div>
-            ) : null}
             </section>
           </main>
         </>
@@ -1108,6 +1113,16 @@ function EmailDetailContent({ selectedEmailDetail, ui }) {
         </p>
       </div>
     </div>
+  );
+}
+
+function EmptyTabPlaceholder({ title, body }) {
+  return (
+    <section className="inspect-empty-state">
+      <span className="section-kicker">Info</span>
+      <h3>{title}</h3>
+      <p>{body}</p>
+    </section>
   );
 }
 
@@ -1351,9 +1366,6 @@ function buildDashboardData(runData, interfaceLocale) {
       llmFallbackCount: runMetadata?.llm_fallback_count ?? 0,
     },
     previewMeta: [
-      { label: ui.provider, value: providerDisplay },
-      { label: ui.language, value: runLanguage },
-      { label: ui.workflowDuration, value: formatDuration(runMetadata?.workflow_duration_ms) },
       { label: ui.totalTokens, value: formatInteger(runMetadata?.llm_total_tokens ?? 0) },
       { label: ui.emailCount, value: String(runMetadata?.email_count ?? emails.length) },
       {
