@@ -605,6 +605,44 @@ h3 {
   line-height: 1.65;
 }
 
+.email-detail-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.email-detail-block {
+  display: grid;
+  gap: 8px;
+}
+
+.email-detail-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin: 0;
+}
+
+.email-detail-grid div {
+  padding: 14px;
+  border-radius: 16px;
+  background: rgba(248, 249, 251, 0.95);
+  border: 1px solid rgba(17, 18, 20, 0.05);
+}
+
+.email-detail-grid dt {
+  color: var(--muted);
+  font-size: 0.8rem;
+  margin-bottom: 6px;
+}
+
+.email-detail-grid dd {
+  margin: 0;
+  font-weight: 700;
+}
+
 .story-list-sheet {
   margin-top: 0;
 }
@@ -729,7 +767,8 @@ h3 {
 .timeline,
 .story-list,
 .action-list,
-.signal-list {
+.signal-list,
+.email-list {
   margin-top: 18px;
 }
 
@@ -737,6 +776,64 @@ h3 {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
   gap: 14px;
+}
+
+.email-list {
+  display: grid;
+  gap: 12px;
+}
+
+.email-row {
+  width: 100%;
+  text-align: left;
+  padding: 18px;
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.72);
+  border: 1px solid rgba(17, 18, 20, 0.06);
+  cursor: pointer;
+  transition: transform 180ms ease, border-color 180ms ease, background-color 180ms ease;
+}
+
+.email-row:hover {
+  transform: translateY(-1px);
+  border-color: var(--line-strong);
+  background: rgba(255, 255, 255, 0.82);
+}
+
+.email-row-active {
+  border-color: var(--line-strong);
+  box-shadow: 0 0 0 4px rgba(17, 18, 20, 0.05);
+}
+
+.email-row strong {
+  display: block;
+  font-size: 1rem;
+  letter-spacing: -0.03em;
+}
+
+.email-row p {
+  margin: 10px 0 0;
+  color: var(--muted);
+  line-height: 1.55;
+}
+
+.email-row-topline,
+.email-row-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.email-row-topline {
+  margin-bottom: 12px;
+}
+
+.email-row-meta {
+  margin-top: 14px;
+  color: var(--muted);
+  font-size: 0.84rem;
+  flex-wrap: wrap;
 }
 
 .message-card {
@@ -967,5 +1064,9 @@ h3 {
 
   .sheet-panel-inner {
     padding: 22px 18px 28px;
+  }
+
+  .email-detail-grid {
+    grid-template-columns: 1fr;
   }
 }

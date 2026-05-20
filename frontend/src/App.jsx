@@ -118,6 +118,23 @@ const UI_TEXT = {
     noMeetingDetails: "No additional meeting details extracted.",
     responseLikelyNeeded: "Response likely needed",
     noDueHint: "No explicit due hint found.",
+    allEmails: "All emails",
+    runInbox: "Run inbox",
+    inspectEveryEmail: "Inspect every message captured in this run, including low-priority and informational mail.",
+    emailDetail: "Email detail",
+    emailList: "Email list",
+    openEmail: "Open email",
+    receivedAt: "Received",
+    subject: "Subject",
+    senderLabel: "Sender",
+    reason: "Reason",
+    bodyPreview: "Body preview",
+    noBodyPreview: "No body preview was captured for this email.",
+    importanceScore: "Importance score",
+    needsAction: "Needs action",
+    confidence: "Confidence",
+    uncertainty: "Uncertainty",
+    noUncertainty: "No uncertainty note recorded.",
     heuristicOrFallback: "Heuristic or fallback",
     llmAssisted: "LLM-assisted",
     runModeMixed: (classification, summary) => `${classification} / ${summary}`,
@@ -178,11 +195,11 @@ const UI_TEXT = {
     nextSteps: "Nächste Schritte",
     noFollowup: "Für diesen Lauf wurden keine Folgeaktionen erkannt.",
     deadlines: "Fristen",
-    timeSensitiveItems: "Zeitkritische Punkte",
-    noDeadlines: "Für diesen Lauf wurden keine klaren Fristsignale erkannt.",
+    timeSensitiveItems: "Was bald ansteht",
+    noDeadlines: "Für diesen Lauf wurden keine anstehenden Fristen oder dringenden Punkte erkannt.",
     meetings: "Besprechungen",
-    calendarSignals: "Kalendersignale",
-    noMeetings: "Es wurden keine Besprechungs- oder Planungssignale erkannt.",
+    calendarSignals: "Termine und Einladungen",
+    noMeetings: "Es wurden keine Termine oder Einladungen erkannt.",
     subscriptions: "Abos",
     recurringCharges: "Wiederkehrende Kosten",
     noSubscriptions: "Für diesen Lauf wurden keine wahrscheinlichen Abos erkannt.",
@@ -235,6 +252,23 @@ const UI_TEXT = {
     noMeetingDetails: "Keine weiteren Besprechungsdetails erkannt.",
     responseLikelyNeeded: "Antwort wahrscheinlich nötig",
     noDueHint: "Keine ausdrückliche Frist erkannt.",
+    allEmails: "Alle E-Mails",
+    runInbox: "E-Mails anzeigen",
+    inspectEveryEmail: "Alle E-Mails aus diesem Lauf ansehen, auch Info- und weniger wichtige Nachrichten.",
+    emailDetail: "E-Mail-Detail",
+    emailList: "E-Mails",
+    openEmail: "E-Mail öffnen",
+    receivedAt: "Empfangen",
+    subject: "Betreff",
+    senderLabel: "Absender",
+    reason: "Begründung",
+    bodyPreview: "Textvorschau",
+    noBodyPreview: "Für diese E-Mail wurde keine Textvorschau erfasst.",
+    importanceScore: "Wichtigkeitswert",
+    needsAction: "Aktion nötig",
+    confidence: "Konfidenz",
+    uncertainty: "Unsicherheit",
+    noUncertainty: "Kein Unsicherheitshinweis erfasst.",
     heuristicOrFallback: "Heuristik oder Fallback",
     llmAssisted: "LLM-gestützt",
     runModeMixed: (classification, summary) => `${classification} / ${summary}`,
@@ -249,6 +283,7 @@ function App() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
   const [activeSheet, setActiveSheet] = useState(null);
+  const [selectedEmailId, setSelectedEmailId] = useState("");
   const [runProvider, setRunProvider] = useState(DEFAULT_RUN_PROVIDER);
   const [triggerDate, setTriggerDate] = useState(DEFAULT_TRIGGER_DATE);
   const [runActionError, setRunActionError] = useState("");
@@ -301,6 +336,7 @@ function App() {
   async function handleRunChange(event) {
     const nextDate = event.target.value;
     setSelectedRunDate(nextDate);
+    setSelectedEmailId("");
     setLoading(true);
     setError("");
 
@@ -347,6 +383,8 @@ function App() {
     [runData, interfaceLocale],
   );
   const ui = dashboardData?.ui ?? UI_TEXT[interfaceLocale];
+  const selectedEmailDetail =
+    dashboardData?.allEmails.find((email) => email.id === selectedEmailId) ?? null;
 
   if (loading && !runData) {
     return (
@@ -615,6 +653,7 @@ function App() {
             <p className="panel-summary">{ui.noSubscriptions}</p>
           )}
         </section>
+
         </div>
 
         <div className="dashboard-column dashboard-column-secondary">
@@ -653,6 +692,24 @@ function App() {
           </div>
 
           <p className="panel-summary">{ui.workflowSummary}</p>
+        </section>
+
+        <section className="panel">
+          <div className="panel-heading">
+            <div>
+              <span className="section-kicker">{ui.allEmails}</span>
+              <h2>{ui.runInbox}</h2>
+            </div>
+            <button
+              type="button"
+              className="section-toggle"
+              onClick={() => setActiveSheet((current) => (current === "email-list" ? null : "email-list"))}
+            >
+              {activeSheet === "email-list" ? ui.hide : ui.view}
+            </button>
+          </div>
+
+          <p className="panel-summary">{ui.inspectEveryEmail}</p>
         </section>
 
         <section className="panel">
@@ -813,6 +870,95 @@ function App() {
                     </ul>
                   </div>
                 ) : null}
+
+                {activeSheet === "email-list" ? (
+                  <div className="sheet-stack">
+                    <p className="sheet-summary">{ui.inspectEveryEmail}</p>
+                    <div className="email-list">
+                      {dashboardData.allEmails.map((item) => (
+                        <button
+                          key={item.id}
+                          type="button"
+                          className={`email-row ${selectedEmailId === item.id ? "email-row-active" : ""}`}
+                          onClick={() => {
+                            setSelectedEmailId(item.id);
+                            setActiveSheet("email");
+                          }}
+                        >
+                          <div className="email-row-topline">
+                            <span className="sender">{item.sender}</span>
+                            <span className={`tag tag-${item.tag.replace(/\s+/g, "-")}`}>{item.tag}</span>
+                          </div>
+                          <strong>{item.subject}</strong>
+                          <p>{item.preview}</p>
+                          <div className="email-row-meta">
+                            <span>{item.receivedAt}</span>
+                            <span>{item.scoreLabel}</span>
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                ) : null}
+
+                {activeSheet === "email" && selectedEmailDetail ? (
+                  <div className="sheet-stack">
+                    <div className="email-detail-header">
+                      <span className={`tag tag-${selectedEmailDetail.tag.replace(/\s+/g, "-")}`}>
+                        {selectedEmailDetail.tag}
+                      </span>
+                      <span className="summary-subtle">{selectedEmailDetail.receivedAt}</span>
+                    </div>
+
+                    <div className="email-detail-block">
+                      <span className="section-kicker">{ui.subject}</span>
+                      <h3>{selectedEmailDetail.subject}</h3>
+                    </div>
+
+                    <div className="email-detail-block">
+                      <span className="section-kicker">{ui.senderLabel}</span>
+                      <p className="sheet-summary">{selectedEmailDetail.sender}</p>
+                    </div>
+
+                    <dl className="email-detail-grid">
+                      <div>
+                        <dt>{ui.importanceScore}</dt>
+                        <dd>{selectedEmailDetail.importanceScore}</dd>
+                      </div>
+                      <div>
+                        <dt>{ui.needsAction}</dt>
+                        <dd>{selectedEmailDetail.needsAction}</dd>
+                      </div>
+                      <div>
+                        <dt>{ui.confidence}</dt>
+                        <dd>{selectedEmailDetail.confidenceScore}</dd>
+                      </div>
+                      <div>
+                        <dt>{ui.receivedAt}</dt>
+                        <dd>{selectedEmailDetail.receivedAt}</dd>
+                      </div>
+                    </dl>
+
+                    <div className="email-detail-block">
+                      <span className="section-kicker">{ui.reason}</span>
+                      <p className="sheet-summary">{selectedEmailDetail.reason}</p>
+                    </div>
+
+                    <div className="email-detail-block">
+                      <span className="section-kicker">{ui.bodyPreview}</span>
+                      <p className="sheet-summary">
+                        {selectedEmailDetail.bodyPreview || ui.noBodyPreview}
+                      </p>
+                    </div>
+
+                    <div className="email-detail-block">
+                      <span className="section-kicker">{ui.uncertainty}</span>
+                      <p className="sheet-summary">
+                        {selectedEmailDetail.uncertaintyNote || ui.noUncertainty}
+                      </p>
+                    </div>
+                  </div>
+                ) : null}
               </div>
             </div>
           </aside>
@@ -934,6 +1080,12 @@ function getSheetKicker(activeSheet, ui) {
   if (activeSheet === "project") {
     return ui.whyThisMatters;
   }
+  if (activeSheet === "email-list") {
+    return ui.allEmails;
+  }
+  if (activeSheet === "email") {
+    return ui.allEmails;
+  }
   return ui.inspector;
 }
 
@@ -943,6 +1095,12 @@ function getSheetTitle(activeSheet, ui) {
   }
   if (activeSheet === "project") {
     return ui.projectValue;
+  }
+  if (activeSheet === "email-list") {
+    return ui.emailList;
+  }
+  if (activeSheet === "email") {
+    return ui.emailDetail;
   }
   return ui.technicalMetadata;
 }
@@ -1008,6 +1166,24 @@ function buildDashboardData(runData, interfaceLocale) {
       tag: formatLabel(assessmentMap.get(email.id)?.label ?? "info"),
       summary: email.snippet || email.body_preview || ui.noPreview,
     })),
+    allEmails: emails.map((email) => {
+      const assessment = assessmentMap.get(email.id);
+      return {
+        id: email.id,
+        sender: email.sender,
+        subject: email.subject,
+        tag: formatLabel(assessment?.label ?? "info"),
+        preview: email.snippet || email.body_preview || ui.noPreview,
+        bodyPreview: email.body_preview || "",
+        receivedAt: formatTimestamp(email.received_at, locale, ui),
+        scoreLabel: `${ui.importanceScore}: ${assessment?.importance_score ?? 0}`,
+        needsAction: yesNo(assessment?.needs_action, ui),
+        importanceScore: assessment?.importance_score ?? 0,
+        confidenceScore: assessment?.confidence_score ?? 0,
+        reason: assessment?.reason ?? ui.unknown,
+        uncertaintyNote: assessment?.uncertainty_note ?? "",
+      };
+    }),
     timeline: buildTimeline({
       ui,
       date,
