@@ -1285,6 +1285,21 @@ h3 {
   color: var(--warn);
 }
 
+.tag-action-item {
+  background: rgba(74, 95, 138, 0.12);
+  color: var(--info);
+}
+
+.tag-financial-obligation {
+  background: rgba(142, 106, 38, 0.12);
+  color: var(--warn);
+}
+
+.tag-deadline {
+  background: rgba(190, 93, 67, 0.12);
+  color: #a24a33;
+}
+
 .tag-needs-reply {
   background: rgba(74, 95, 138, 0.12);
   color: var(--info);
@@ -1431,6 +1446,149 @@ h3 {
   background: rgba(255, 255, 255, 0.74);
   border: 1px solid rgba(17, 18, 20, 0.05);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.6);
+}
+
+.review-card-grid {
+  display: grid;
+  gap: 16px;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+}
+
+.review-card {
+  display: grid;
+  gap: 14px;
+  padding: 18px;
+  border-radius: 20px;
+  background: rgba(249, 246, 240, 0.9);
+  border: 1px solid rgba(47, 42, 38, 0.08);
+}
+
+.review-card-topline {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: flex-start;
+  flex-wrap: wrap;
+}
+
+.review-card-body {
+  display: grid;
+  gap: 8px;
+}
+
+.review-card-body h4,
+.review-card-body p {
+  margin: 0;
+}
+
+.review-detail-list {
+  margin: 0;
+  padding-left: 1.1rem;
+  color: var(--muted);
+}
+
+.review-meta-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin: 0;
+}
+
+.review-meta-grid div {
+  padding: 12px 14px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.74);
+  border: 1px solid rgba(17, 18, 20, 0.05);
+}
+
+.review-meta-grid dt {
+  margin-bottom: 6px;
+  color: var(--muted);
+  font-size: 0.76rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.review-meta-grid dd {
+  margin: 0;
+  font-weight: 700;
+}
+
+.review-status-pill {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  padding: 6px 10px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  border: 1px solid rgba(17, 18, 20, 0.08);
+  background: rgba(255, 255, 255, 0.76);
+}
+
+.review-status-pending {
+  color: #8c6a26;
+  background: rgba(142, 106, 38, 0.1);
+}
+
+.review-status-confirmed {
+  color: var(--success);
+  background: rgba(63, 111, 91, 0.12);
+}
+
+.review-status-rejected {
+  color: #a24a33;
+  background: rgba(190, 93, 67, 0.12);
+}
+
+.review-status-corrected {
+  color: var(--info);
+  background: rgba(74, 95, 138, 0.12);
+}
+
+.review-action-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.review-note-field {
+  display: grid;
+  gap: 8px;
+}
+
+.review-note-field span {
+  color: var(--muted);
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.review-note-field textarea {
+  width: 100%;
+  resize: vertical;
+  min-height: 78px;
+  padding: 12px 14px;
+  border-radius: 16px;
+  border: 1px solid rgba(47, 42, 38, 0.12);
+  background: rgba(255, 255, 255, 0.86);
+  font: inherit;
+  color: var(--ink);
+}
+
+.review-note-field textarea:focus {
+  outline: none;
+  border-color: rgba(58, 52, 47, 0.32);
+  box-shadow: 0 0 0 3px rgba(58, 52, 47, 0.08);
+}
+
+.review-correction-panel {
+  display: grid;
+  gap: 12px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(47, 42, 38, 0.08);
+}
+
+.review-save-button {
+  width: 100%;
 }
 
 .inspect-section-card > .section-kicker {

@@ -147,11 +147,42 @@ const UI_TEXT = {
     inspectWorkflowTab: "Workflow",
     inspectEmailsTab: "Emails",
     inspectEvidenceTab: "Details",
+    inspectReviewTab: "Review",
     inspectWorkspace: "Workspace",
     noEmailsTabTitle: "No emails available",
     noEmailsTabBody: "This saved summary does not include any emails to inspect yet.",
     noEvidenceTabTitle: "No email selected",
     noEvidenceTabBody: "Choose an email in the Emails tab to inspect its details here.",
+    reviewPanel: "Review queue",
+    reviewPanelCopy: "Confirm, reject, or correct extracted items and keep the saved run aligned with human review.",
+    noExtractedItemsTitle: "No extracted items available",
+    noExtractedItemsBody: "This run does not include reviewable extracted items yet.",
+    reviewPending: "Pending",
+    reviewConfirmed: "Confirmed",
+    reviewRejected: "Rejected",
+    reviewCorrected: "Corrected",
+    confirm: "Confirm",
+    reject: "Reject",
+    correct: "Correct",
+    saveCorrection: "Save correction",
+    correctionLabel: "Corrected value",
+    correctionPlaceholder: "Add the corrected version or note the value that should be kept.",
+    reviewerNote: "Reviewer note",
+    reviewerNotePlaceholder: "Optional note about why you confirmed, rejected, or corrected this item.",
+    reviewSaved: "Review update saved.",
+    reviewSaveFailed: "Could not save the review update.",
+    reviewStatus: "Review status",
+    sourceEvidence: "Source evidence",
+    extractedType: "Type",
+    correctedValue: "Corrected value",
+    noCorrectedValue: "No corrected value saved.",
+    extractedTypeLabels: {
+      action_item: "Action item",
+      deadline: "Deadline",
+      meeting: "Meeting",
+      financial_obligation: "Financial obligation",
+      follow_up: "Follow-up",
+    },
     categoryLabels: {
       urgent: "Urgent",
       needs_reply: "Needs reply",
@@ -306,11 +337,42 @@ const UI_TEXT = {
     inspectWorkflowTab: "Ablauf",
     inspectEmailsTab: "E-Mails",
     inspectEvidenceTab: "Details",
+    inspectReviewTab: "Review",
     inspectWorkspace: "Arbeitsbereich",
     noEmailsTabTitle: "Keine E-Mails vorhanden",
     noEmailsTabBody: "Diese gespeicherte Zusammenfassung enthält derzeit keine E-Mails zur Prüfung.",
     noEvidenceTabTitle: "Keine E-Mail ausgewählt",
     noEvidenceTabBody: "Wähle im Tab E-Mails eine Nachricht aus, um hier ihre Details zu sehen.",
+    reviewPanel: "Review-Warteschlange",
+    reviewPanelCopy: "Bestätige, verwerfe oder korrigiere extrahierte Einträge und halte den gespeicherten Lauf mit menschlichem Review synchron.",
+    noExtractedItemsTitle: "Keine extrahierten Einträge verfügbar",
+    noExtractedItemsBody: "Dieser Lauf enthält noch keine reviewbaren extrahierten Einträge.",
+    reviewPending: "Ausstehend",
+    reviewConfirmed: "Bestätigt",
+    reviewRejected: "Verworfen",
+    reviewCorrected: "Korrigiert",
+    confirm: "Bestätigen",
+    reject: "Verwerfen",
+    correct: "Korrigieren",
+    saveCorrection: "Korrektur speichern",
+    correctionLabel: "Korrigierter Wert",
+    correctionPlaceholder: "Ergänze die korrigierte Version oder notiere den Wert, der erhalten bleiben soll.",
+    reviewerNote: "Review-Notiz",
+    reviewerNotePlaceholder: "Optionale Notiz dazu, warum dieser Eintrag bestätigt, verworfen oder korrigiert wurde.",
+    reviewSaved: "Review-Update gespeichert.",
+    reviewSaveFailed: "Review-Update konnte nicht gespeichert werden.",
+    reviewStatus: "Review-Status",
+    sourceEvidence: "Quellbeleg",
+    extractedType: "Typ",
+    correctedValue: "Korrigierter Wert",
+    noCorrectedValue: "Noch kein korrigierter Wert gespeichert.",
+    extractedTypeLabels: {
+      action_item: "Nächster Schritt",
+      deadline: "Frist",
+      meeting: "Besprechung",
+      financial_obligation: "Finanzieller Punkt",
+      follow_up: "Follow-up",
+    },
     categoryLabels: {
       urgent: "Dringend",
       needs_reply: "Antwort nötig",
@@ -341,6 +403,9 @@ function App() {
   const [runActionError, setRunActionError] = useState("");
   const [runActionMessage, setRunActionMessage] = useState("");
   const [isRunning, setIsRunning] = useState(false);
+  const [reviewActionError, setReviewActionError] = useState("");
+  const [reviewActionMessage, setReviewActionMessage] = useState("");
+  const [savingReviewItemId, setSavingReviewItemId] = useState("");
 
   useEffect(() => {
     loadRuns();
@@ -391,6 +456,8 @@ function App() {
     setSelectedEmailId("");
     setLoading(true);
     setError("");
+    setReviewActionError("");
+    setReviewActionMessage("");
 
     try {
       const nextRun = await fetchRun(nextDate);
@@ -430,6 +497,37 @@ function App() {
     }
   }
 
+  async function handleReviewUpdate(itemId, payload) {
+    if (!selectedRunDate) {
+      return;
+    }
+
+    setSavingReviewItemId(itemId);
+    setReviewActionError("");
+    setReviewActionMessage("");
+
+    try {
+      const response = await fetchJson(
+        `/api/runs/${selectedRunDate}/extracted-items/${encodeURIComponent(itemId)}`,
+        ui.reviewSaveFailed,
+        {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(payload),
+        },
+      );
+
+      setRunData(response.run);
+      setReviewActionMessage(ui.reviewSaved);
+    } catch (reviewError) {
+      setReviewActionError(reviewError instanceof Error ? reviewError.message : ui.reviewSaveFailed);
+    } finally {
+      setSavingReviewItemId("");
+    }
+  }
+
   const dashboardData = useMemo(
     () => buildDashboardData(runData, interfaceLocale),
     [runData, interfaceLocale],
@@ -448,6 +546,7 @@ function App() {
   const inspectTabs = [
     ["run", ui.inspectRunTab],
     ["workflow", ui.inspectWorkflowTab],
+    ["review", ui.inspectReviewTab],
     ["emails", ui.inspectEmailsTab],
     ["evidence", ui.inspectEvidenceTab],
   ];
@@ -876,6 +975,50 @@ function App() {
                   </div>
                 ) : null}
 
+                {inspectTab === "review" ? (
+                  dashboardData.extractedItems.length > 0 ? (
+                    <div className="sheet-stack">
+                      <section className="inspect-section-card">
+                        <div className="inspect-card-header">
+                          <span className="section-kicker">{ui.reviewPanel}</span>
+                          <p className="sheet-summary">{ui.reviewPanelCopy}</p>
+                        </div>
+                        {reviewActionError ? (
+                          <p className="signal-feedback signal-feedback-error">{reviewActionError}</p>
+                        ) : null}
+                        {!reviewActionError && reviewActionMessage ? (
+                          <p className="signal-feedback">{reviewActionMessage}</p>
+                        ) : null}
+                      </section>
+
+                      {dashboardData.extractedGroups.map((group) => (
+                        <section className="inspect-section-card" key={group.itemType}>
+                          <div className="inspect-card-header">
+                            <span className="section-kicker">{ui.extractedType}</span>
+                            <h3>{group.label}</h3>
+                          </div>
+                          <div className="review-card-grid">
+                            {group.items.map((item) => (
+                              <ReviewItemCard
+                                key={item.id}
+                                item={item}
+                                ui={ui}
+                                isSaving={savingReviewItemId === item.id}
+                                onReview={handleReviewUpdate}
+                              />
+                            ))}
+                          </div>
+                        </section>
+                      ))}
+                    </div>
+                  ) : (
+                    <EmptyTabPlaceholder
+                      title={ui.noExtractedItemsTitle}
+                      body={ui.noExtractedItemsBody}
+                    />
+                  )
+                ) : null}
+
                 {inspectTab === "emails" ? (
                   dashboardData.allEmails.length > 0 ? (
                     <div className="email-explorer">
@@ -1242,15 +1385,156 @@ function getSheetTitle(activeSheet, ui) {
   return ui.technicalMetadata;
 }
 
+function ReviewItemCard({ item, ui, isSaving, onReview }) {
+  const [isCorrecting, setIsCorrecting] = useState(item.reviewStatus === "corrected");
+  const [correctionText, setCorrectionText] = useState(formatReviewedValue(item.reviewedValue));
+  const [reviewerNote, setReviewerNote] = useState(item.reviewerNote ?? "");
+
+  useEffect(() => {
+    setIsCorrecting(item.reviewStatus === "corrected");
+    setCorrectionText(formatReviewedValue(item.reviewedValue));
+    setReviewerNote(item.reviewerNote ?? "");
+  }, [item.id, item.reviewStatus, item.reviewedValue, item.reviewerNote]);
+
+  return (
+    <article className="review-card">
+      <div className="review-card-topline">
+        <span className={`tag tag-${item.itemType.replace(/_/g, "-")}`}>{item.itemTypeLabel}</span>
+        <span className={`review-status-pill review-status-${item.reviewStatus}`}>
+          {item.reviewStatusLabel}
+        </span>
+      </div>
+
+      <div className="review-card-body">
+        <h4>{item.title || item.description}</h4>
+        {item.description && item.description !== item.title ? <p>{item.description}</p> : null}
+        {item.detailLines.length > 0 ? (
+          <ul className="review-detail-list">
+            {item.detailLines.map((detail) => (
+              <li key={detail}>{detail}</li>
+            ))}
+          </ul>
+        ) : null}
+      </div>
+
+      <dl className="review-meta-grid">
+        <div>
+          <dt>{ui.confidence}</dt>
+          <dd>{item.confidenceLabel}</dd>
+        </div>
+        <div>
+          <dt>{ui.reviewStatus}</dt>
+          <dd>{item.reviewStatusLabel}</dd>
+        </div>
+      </dl>
+
+      <div className="email-detail-block">
+        <span className="section-kicker">{ui.reason}</span>
+        <p className="sheet-summary">{item.confidenceReason || ui.unknown}</p>
+      </div>
+
+      <div className="email-detail-block">
+        <span className="section-kicker">{ui.sourceEvidence}</span>
+        <p className="sheet-summary">{item.evidenceText || ui.noPreview}</p>
+      </div>
+
+      {item.reviewedValue ? (
+        <div className="email-detail-block">
+          <span className="section-kicker">{ui.correctedValue}</span>
+          <p className="sheet-summary">
+            {formatReviewedValue(item.reviewedValue) || ui.noCorrectedValue}
+          </p>
+        </div>
+      ) : null}
+
+      <div className="review-action-row">
+        <button
+          type="button"
+          className="section-toggle"
+          disabled={isSaving}
+          onClick={() =>
+            onReview(item.id, {
+              review_status: "confirmed",
+              reviewer_note: reviewerNote,
+            })
+          }
+        >
+          {ui.confirm}
+        </button>
+        <button
+          type="button"
+          className="section-toggle"
+          disabled={isSaving}
+          onClick={() =>
+            onReview(item.id, {
+              review_status: "rejected",
+              reviewer_note: reviewerNote,
+            })
+          }
+        >
+          {ui.reject}
+        </button>
+        <button
+          type="button"
+          className="section-toggle"
+          disabled={isSaving}
+          onClick={() => setIsCorrecting((current) => !current)}
+        >
+          {ui.correct}
+        </button>
+      </div>
+
+      <label className="review-note-field">
+        <span>{ui.reviewerNote}</span>
+        <textarea
+          value={reviewerNote}
+          onChange={(event) => setReviewerNote(event.target.value)}
+          placeholder={ui.reviewerNotePlaceholder}
+          rows={2}
+        />
+      </label>
+
+      {isCorrecting ? (
+        <div className="review-correction-panel">
+          <label className="review-note-field">
+            <span>{ui.correctionLabel}</span>
+            <textarea
+              value={correctionText}
+              onChange={(event) => setCorrectionText(event.target.value)}
+              placeholder={ui.correctionPlaceholder}
+              rows={3}
+            />
+          </label>
+          <button
+            type="button"
+            className="run-trigger-button review-save-button"
+            disabled={isSaving || !correctionText.trim()}
+            onClick={() =>
+              onReview(item.id, {
+                review_status: "corrected",
+                reviewed_value: { corrected_text: correctionText.trim() },
+                reviewer_note: reviewerNote,
+              })
+            }
+          >
+            {isSaving ? ui.runningRun : ui.saveCorrection}
+          </button>
+        </div>
+      ) : null}
+    </article>
+  );
+}
+
 function buildDashboardData(runData, interfaceLocale) {
   if (!runData) {
     return null;
   }
 
-  const { summary, assessments, emails, deadlines, meetings, subscriptions, date, runMetadata } = runData;
+  const { summary, assessments, emails, deadlines, meetings, subscriptions, extractedItems, date, runMetadata } = runData;
   const importantIds = new Set(summary.important_email_ids ?? []);
   const importantEmails = emails.filter((email) => importantIds.has(email.id));
   const assessmentMap = new Map(assessments.map((item) => [item.email_id, item]));
+  const emailMap = new Map(emails.map((email) => [email.id, email]));
   const provider = runMetadata?.provider ?? importantEmails[0]?.source ?? emails[0]?.source ?? "unknown";
   const providerDisplay = formatProviderName(provider);
   const locale = interfaceLocale === "de" ? "de" : "en";
@@ -1319,6 +1603,10 @@ function buildDashboardData(runData, interfaceLocale) {
         uncertaintyNote: assessment?.uncertainty_note ?? "",
       };
     }),
+    extractedItems: (extractedItems ?? []).map((item) => mapExtractedItem(item, ui, emailMap)),
+    extractedGroups: groupExtractedItems(
+      (extractedItems ?? []).map((item) => mapExtractedItem(item, ui, emailMap)),
+    ),
     timeline: buildTimeline({
       ui,
       date,
@@ -1460,6 +1748,78 @@ function humanizeStepName(step) {
     .replace(/\b\w/g, (char) => char.toUpperCase());
 }
 
+function mapExtractedItem(item, ui, emailMap) {
+  const sourceEmail = emailMap.get(item.source_email_id);
+  return {
+    id: item.id,
+    itemType: item.item_type,
+    itemTypeLabel: ui.extractedTypeLabels[item.item_type] ?? item.item_type,
+    reviewStatus: item.review_status ?? "pending",
+    reviewStatusLabel: formatReviewStatus(item.review_status, ui),
+    title: item.title ?? "",
+    description: item.description ?? "",
+    confidenceLabel: `${item.confidence_score ?? 0}/100`,
+    confidenceReason: item.confidence_reason ?? "",
+    evidenceText: item.evidence_text ?? sourceEmail?.snippet ?? sourceEmail?.body_preview ?? "",
+    reviewedValue: item.reviewed_value ?? null,
+    reviewerNote: item.reviewer_note ?? "",
+    detailLines: buildExtractedItemDetails(item, ui),
+  };
+}
+
+function buildExtractedItemDetails(item, ui) {
+  const details = [];
+  const itemData = item.item_data ?? {};
+
+  if (item.item_type === "deadline" && itemData.due_hint) {
+    details.push(itemData.due_hint);
+  }
+  if (item.item_type === "meeting") {
+    if (itemData.when_hint) {
+      details.push(itemData.when_hint);
+    }
+    if (itemData.location_hint) {
+      details.push(itemData.location_hint);
+    }
+    if (itemData.needs_response) {
+      details.push(ui.responseLikelyNeeded);
+    }
+  }
+  if (item.item_type === "financial_obligation") {
+    if (itemData.amount_hint) {
+      details.push(itemData.amount_hint);
+    }
+    if (itemData.renewal_hint) {
+      details.push(itemData.renewal_hint);
+    }
+    if (itemData.cancellation_hint) {
+      details.push(itemData.cancellation_hint);
+    }
+  }
+  if (item.item_type === "action_item" && itemData.priority) {
+    details.push(formatLabel(itemData.priority, ui));
+  }
+
+  return details;
+}
+
+function groupExtractedItems(items) {
+  const grouped = new Map();
+
+  items.forEach((item) => {
+    if (!grouped.has(item.itemType)) {
+      grouped.set(item.itemType, {
+        itemType: item.itemType,
+        label: item.itemTypeLabel,
+        items: [],
+      });
+    }
+    grouped.get(item.itemType).items.push(item);
+  });
+
+  return Array.from(grouped.values());
+}
+
 function formatLabel(label, ui) {
   const normalized = String(label ?? "").toLowerCase();
   return ui?.categoryLabels?.[normalized] ?? normalized.replace(/_/g, " ");
@@ -1518,6 +1878,33 @@ function formatMode(value, ui) {
 
 function yesNo(value, ui) {
   return value ? ui.yes : ui.no;
+}
+
+function formatReviewStatus(status, ui) {
+  if (status === "confirmed") {
+    return ui.reviewConfirmed;
+  }
+  if (status === "rejected") {
+    return ui.reviewRejected;
+  }
+  if (status === "corrected") {
+    return ui.reviewCorrected;
+  }
+  return ui.reviewPending;
+}
+
+function formatReviewedValue(reviewedValue) {
+  if (!reviewedValue) {
+    return "";
+  }
+  if (typeof reviewedValue.corrected_text === "string") {
+    return reviewedValue.corrected_text;
+  }
+  try {
+    return JSON.stringify(reviewedValue, null, 2);
+  } catch {
+    return "";
+  }
 }
 
 function formatMeetingDetail(item, ui) {
