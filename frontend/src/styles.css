@@ -829,6 +829,60 @@ h3 {
   font-weight: 700;
 }
 
+.email-view-toggle-row {
+  display: inline-flex;
+  gap: 8px;
+  margin-bottom: 12px;
+  padding: 6px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.7);
+  border: 1px solid rgba(47, 42, 38, 0.08);
+}
+
+.email-view-toggle {
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  border-radius: 999px;
+  padding: 8px 12px;
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.email-view-toggle-active {
+  background: #3a342f;
+  color: #f8f5ef;
+}
+
+.email-html-view {
+  display: grid;
+  gap: 10px;
+}
+
+.email-text-view {
+  max-height: 340px;
+  overflow: auto;
+  padding: 16px;
+  border-radius: 18px;
+  border: 1px solid rgba(47, 42, 38, 0.08);
+  background: rgba(255, 255, 255, 0.8);
+}
+
+.email-text-view-copy {
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.email-html-frame {
+  width: 100%;
+  min-height: 420px;
+  border: 1px solid rgba(47, 42, 38, 0.12);
+  border-radius: 18px;
+  background: white;
+}
+
 .story-list-sheet {
   margin-top: 0;
 }

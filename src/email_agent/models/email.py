@@ -25,6 +25,7 @@ class NormalizedEmail(BaseModel):
     snippet: str
     labels: list[str] = Field(default_factory=list)
     body_preview: str = ""
+    body_html: str = ""
 
 
 ImportanceLabel = Literal["urgent", "needs_reply", "meeting", "finance", "info", "low_priority"]

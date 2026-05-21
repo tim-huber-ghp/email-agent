@@ -136,6 +136,10 @@ const UI_TEXT = {
     reason: "Reason",
     reasonWhyItMatters: "Why it matters",
     bodyPreview: "Body preview",
+    htmlView: "HTML view",
+    textView: "Text view",
+    originalEmail: "Original email",
+    noHtmlBody: "No HTML version was captured for this email.",
     noBodyPreview: "No body preview was captured for this email.",
     importanceScore: "Importance score",
     needsAction: "Needs action",
@@ -331,6 +335,10 @@ const UI_TEXT = {
     reason: "Begründung",
     reasonWhyItMatters: "Warum wichtig",
     bodyPreview: "Textvorschau",
+    htmlView: "HTML-Ansicht",
+    textView: "Textansicht",
+    originalEmail: "Original-E-Mail",
+    noHtmlBody: "Für diese E-Mail wurde keine HTML-Version erfasst.",
     noBodyPreview: "Für diese E-Mail wurde keine Textvorschau erfasst.",
     importanceScore: "Wichtigkeitswert",
     needsAction: "Aktion nötig",
@@ -1192,6 +1200,12 @@ function App() {
 export default App;
 
 function EmailDetailContent({ selectedEmailDetail, ui }) {
+  const [contentView, setContentView] = useState(selectedEmailDetail.bodyHtml ? "html" : "text");
+
+  useEffect(() => {
+    setContentView(selectedEmailDetail.bodyHtml ? "html" : "text");
+  }, [selectedEmailDetail.id, selectedEmailDetail.bodyHtml]);
+
   return (
     <div className="sheet-stack">
       <div className="email-detail-header">
@@ -1237,9 +1251,42 @@ function EmailDetailContent({ selectedEmailDetail, ui }) {
 
       <div className="email-detail-block">
         <span className="section-kicker">{ui.bodyPreview}</span>
-        <p className="sheet-summary">
-          {selectedEmailDetail.bodyPreview || ui.noBodyPreview}
-        </p>
+        {selectedEmailDetail.bodyHtml ? (
+          <div className="email-view-toggle-row">
+            <button
+              type="button"
+              className={`email-view-toggle ${contentView === "text" ? "email-view-toggle-active" : ""}`}
+              onClick={() => setContentView("text")}
+            >
+              {ui.textView}
+            </button>
+            <button
+              type="button"
+              className={`email-view-toggle ${contentView === "html" ? "email-view-toggle-active" : ""}`}
+              onClick={() => setContentView("html")}
+            >
+              {ui.htmlView}
+            </button>
+          </div>
+        ) : null}
+        {contentView === "html" && selectedEmailDetail.bodyHtml ? (
+          <div className="email-html-view">
+            <span className="section-kicker">{ui.originalEmail}</span>
+            <iframe
+              className="email-html-frame"
+              sandbox=""
+              srcDoc={buildEmailHtmlDocument(selectedEmailDetail.bodyHtml)}
+              title={selectedEmailDetail.subject}
+            />
+          </div>
+        ) : (
+          <div className="email-text-view">
+            <p className="sheet-summary email-text-view-copy">
+              {selectedEmailDetail.bodyPreview
+                || (selectedEmailDetail.bodyHtml ? ui.noHtmlBody : ui.noBodyPreview)}
+            </p>
+          </div>
+        )}
       </div>
 
       <div className="email-detail-block">
@@ -1612,6 +1659,7 @@ function buildDashboardData(runData, interfaceLocale) {
         tag: formatLabel(assessment?.label ?? "info", ui),
         preview: email.snippet || email.body_preview || ui.noPreview,
         bodyPreview: email.body_preview || "",
+        bodyHtml: email.body_html || "",
         receivedAt: formatTimestamp(email.received_at, locale, ui),
         scoreLabel: `${ui.importanceScore}: ${assessment?.importance_score ?? 0}`,
         needsAction: yesNo(assessment?.needs_action, ui),
@@ -1928,6 +1976,48 @@ function formatReviewedValue(reviewedValue) {
 function buildCorrectionPlaceholder(item, ui) {
   const parts = [item.title || item.description, ...item.detailLines].filter(Boolean);
   return parts.join(" | ") || ui.correctionPlaceholder;
+}
+
+function buildEmailHtmlDocument(rawHtml) {
+  const sanitized = sanitizeEmailHtml(rawHtml);
+  return `<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <style>
+      body {
+        margin: 0;
+        padding: 16px;
+        font-family: Arial, sans-serif;
+        color: #222;
+        background: #fff;
+        line-height: 1.55;
+        word-break: break-word;
+      }
+      img {
+        max-width: 100%;
+        height: auto;
+      }
+      table {
+        max-width: 100%;
+      }
+      a {
+        color: #315a9a;
+      }
+    </style>
+  </head>
+  <body>${sanitized}</body>
+</html>`;
+}
+
+function sanitizeEmailHtml(rawHtml) {
+  return String(rawHtml ?? "")
+    .replace(/<script[\s\S]*?>[\s\S]*?<\/script>/gi, "")
+    .replace(/<style[\s\S]*?>[\s\S]*?<\/style>/gi, "")
+    .replace(/\son\w+="[^"]*"/gi, "")
+    .replace(/\son\w+='[^']*'/gi, "")
+    .replace(/\s(href|src)=("javascript:[^"]*"|'javascript:[^']*')/gi, " $1=\"#\"");
 }
 
 function formatMeetingDetail(item, ui) {

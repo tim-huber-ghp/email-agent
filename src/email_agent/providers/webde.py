@@ -150,7 +150,7 @@ def _message_to_record(message: Message) -> dict[str, object]:
     sender = _format_sender(_decode_mime_header(message.get("From", "Unknown sender")))
     subject = _decode_mime_header(message.get("Subject", "(No subject)")) or "(No subject)"
     received_at = _parse_message_date(message.get("Date"))
-    body_preview = _extract_message_body_text(message)
+    body_preview, body_html = _extract_message_body_content(message)
     snippet_source = body_preview or subject
 
     return {
@@ -160,6 +160,7 @@ def _message_to_record(message: Message) -> dict[str, object]:
         "snippet": _normalize_whitespace(snippet_source)[:220],
         "labels": [],
         "body_preview": body_preview,
+        "body_html": body_html,
     }
 
 
@@ -173,9 +174,14 @@ def _parse_message_date(value: str | None) -> datetime:
 
 
 def _extract_message_body_text(message: Message) -> str:
+    return _extract_message_body_content(message)[0]
+
+
+def _extract_message_body_content(message: Message) -> tuple[str, str]:
     if message.is_multipart():
         plain_parts: list[str] = []
-        html_parts: list[str] = []
+        html_text_parts: list[str] = []
+        html_raw_parts: list[str] = []
 
         for part in message.walk():
             if part.is_multipart():
@@ -192,19 +198,20 @@ def _extract_message_body_text(message: Message) -> str:
             if content_type == "text/plain":
                 plain_parts.append(decoded)
             elif content_type == "text/html":
-                html_parts.append(_html_to_text(decoded))
+                html_text_parts.append(_html_to_text(decoded))
+                html_raw_parts.append(decoded)
 
         if plain_parts:
-            return _normalize_whitespace("\n".join(plain_parts))
-        if html_parts:
-            return _normalize_whitespace("\n".join(html_parts))
-        return ""
+            return _normalize_whitespace("\n".join(plain_parts)), "\n".join(html_raw_parts)
+        if html_text_parts:
+            return _normalize_whitespace("\n".join(html_text_parts)), "\n".join(html_raw_parts)
+        return "", ""
 
     content_type = message.get_content_type()
     decoded = _decode_message_part(message)
     if content_type == "text/html":
-        return _html_to_text(decoded)
-    return _normalize_whitespace(decoded)
+        return _html_to_text(decoded), decoded
+    return _normalize_whitespace(decoded), ""
 
 
 def _decode_message_part(part: Message) -> str:

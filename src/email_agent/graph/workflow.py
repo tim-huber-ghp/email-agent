@@ -76,6 +76,7 @@ def normalize_emails(state: AgentState) -> AgentState:
                     "snippet": payload["snippet"],
                     "labels": payload.get("labels", []),
                     "body_preview": payload.get("body_preview", ""),
+                    "body_html": payload.get("body_html", ""),
                 }
             )
         )

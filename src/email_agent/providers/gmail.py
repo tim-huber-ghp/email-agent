@@ -126,7 +126,7 @@ def _gmail_date_query(target_date: date) -> str:
 
 def _gmail_payload_to_record(message: dict) -> dict:
     headers = _headers_to_map(message.get("payload", {}).get("headers", []))
-    body_preview = _extract_body_text(message.get("payload", {}))
+    body_preview, body_html = _extract_body_content(message.get("payload", {}))
     received_at = datetime.fromtimestamp(int(message["internalDate"]) / 1000, tz=UTC)
 
     return {
@@ -136,6 +136,7 @@ def _gmail_payload_to_record(message: dict) -> dict:
         "snippet": _normalize_whitespace(message.get("snippet", "")),
         "labels": message.get("labelIds", []),
         "body_preview": body_preview,
+        "body_html": body_html,
     }
 
 
@@ -148,38 +149,45 @@ def _headers_to_map(headers: list[dict]) -> dict[str, str]:
 
 
 def _extract_body_text(payload: dict) -> str:
+    return _extract_body_content(payload)[0]
+
+
+def _extract_body_content(payload: dict) -> tuple[str, str]:
     mime_type = payload.get("mimeType", "")
     body_data = payload.get("body", {}).get("data")
 
     if mime_type == "text/plain" and body_data:
-        return _normalize_whitespace(_decode_base64_text(body_data))
+        return _normalize_whitespace(_decode_base64_text(body_data)), ""
 
     if mime_type == "text/html" and body_data:
-        return _html_to_text(_decode_base64_text(body_data))
+        raw_html = _decode_base64_text(body_data)
+        return _html_to_text(raw_html), raw_html
 
     plain_parts: list[str] = []
-    html_parts: list[str] = []
+    html_text_parts: list[str] = []
+    html_raw_parts: list[str] = []
 
     for part in payload.get("parts", []):
-        text = _extract_body_text(part)
-        if not text:
+        text, raw_html = _extract_body_content(part)
+        if not text and not raw_html:
             continue
 
-        if part.get("mimeType") == "text/html":
-            html_parts.append(text)
+        if raw_html:
+            html_text_parts.append(text)
+            html_raw_parts.append(raw_html)
         else:
             plain_parts.append(text)
 
     if plain_parts:
-        return _normalize_whitespace("\n".join(plain_parts))
+        return _normalize_whitespace("\n".join(plain_parts)), "\n".join(html_raw_parts)
 
-    if html_parts:
-        return _normalize_whitespace("\n".join(html_parts))
+    if html_text_parts:
+        return _normalize_whitespace("\n".join(html_text_parts)), "\n".join(html_raw_parts)
 
     if body_data:
-        return _normalize_whitespace(_decode_base64_text(body_data))
+        return _normalize_whitespace(_decode_base64_text(body_data)), ""
 
-    return ""
+    return "", ""
 
 
 def _decode_base64_text(value: str) -> str:

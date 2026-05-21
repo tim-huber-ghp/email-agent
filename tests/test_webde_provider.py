@@ -37,7 +37,21 @@ def test_message_to_record_normalizes_sender_subject_and_body() -> None:
     assert record["subject"] == "Budget Update"
     assert record["body_preview"] == "Please review the budget update today.\n\nThanks."
     assert record["snippet"] == "Please review the budget update today.\n\nThanks."[:220]
+    assert record["body_html"] == ""
     assert record["received_at"].endswith("+00:00")
+
+
+def test_message_to_record_preserves_html_body_when_plain_text_missing() -> None:
+    message = EmailMessage()
+    message["From"] = '"Alice Example" <alice@example.com>'
+    message["Subject"] = "Meeting Invite"
+    message["Date"] = "Tue, 19 May 2026 09:00:00 +0200"
+    message.add_alternative("<p>Please confirm the <b>meeting</b> time.</p>", subtype="html")
+
+    record = _message_to_record(message)
+
+    assert record["body_preview"] == "Please confirm the meeting time."
+    assert "<b>meeting</b>" in record["body_html"]
 
 
 def test_message_to_record_uses_utc_timestamps() -> None:

@@ -67,3 +67,27 @@ def test_gmail_payload_to_record_normalizes_sender_and_text() -> None:
     assert record["subject"] == "Budget Update"
     assert record["snippet"] == "Budget update needed today"
     assert record["body_preview"] == "Please review the budget today.\n\nThanks."
+    assert record["body_html"] == ""
+
+
+def test_gmail_payload_to_record_preserves_html_body_when_available() -> None:
+    message = {
+        "id": "gmail-456",
+        "internalDate": "1746871200000",
+        "snippet": "Meeting invite",
+        "labelIds": ["INBOX"],
+        "payload": {
+            "headers": [
+                {"name": "From", "value": '"Alice Example" <alice@example.com>'},
+                {"name": "Subject", "value": "Meeting invite"},
+            ],
+            "mimeType": "text/html",
+            "body": {"data": _b64("<div><p>Hello <b>team</b></p><p>See agenda below.</p></div>")},
+        },
+    }
+
+    record = _gmail_payload_to_record(message)
+
+    assert "Hello team" in record["body_preview"]
+    assert "See agenda below." in record["body_preview"]
+    assert "<b>team</b>" in record["body_html"]
