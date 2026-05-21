@@ -413,6 +413,7 @@ def save_run(state: AgentState, settings: Settings) -> AgentState:
         important_email_count=len(
             state.get("summary", DailySummary(overview="", headline="")).important_email_ids
         ),
+        extracted_item_count=len(state.get("extracted_items", [])),
         uncertain_assessment_count=state.get("uncertain_assessment_count", 0),
         abstained_assessment_count=state.get("abstained_assessment_count", 0),
         llm_fallback_count=state.get("llm_fallback_count", 0),

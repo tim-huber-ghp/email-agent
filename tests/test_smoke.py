@@ -37,6 +37,7 @@ def test_workflow_returns_state() -> None:
     assert result["deadlines"]
     assert result["meetings"]
     assert result["subscriptions"]
+    assert result["run_metadata"].extracted_item_count == len(result["extracted_items"])
     assert result["run_metadata"].run_started_at
     assert result["run_metadata"].run_completed_at
     assert result["run_metadata"].workflow_duration_ms >= 0

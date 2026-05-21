@@ -27,6 +27,7 @@ class RunMetadata(BaseModel):
     email_count: int = Field(default=0, ge=0)
     filtered_email_count: int = Field(default=0, ge=0)
     important_email_count: int = Field(default=0, ge=0)
+    extracted_item_count: int = Field(default=0, ge=0)
     uncertain_assessment_count: int = Field(default=0, ge=0)
     abstained_assessment_count: int = Field(default=0, ge=0)
     llm_fallback_count: int = Field(default=0, ge=0)
