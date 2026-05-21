@@ -155,6 +155,11 @@ const UI_TEXT = {
     noEvidenceTabBody: "Choose an email in the Emails tab to inspect its details here.",
     reviewPanel: "Review queue",
     reviewPanelCopy: "Confirm, reject, or correct extracted items and keep the saved run aligned with human review.",
+    reviewPanelScope: "You are reviewing extracted items from emails, such as action items, deadlines, meetings, or financial obligations.",
+    correctionHelp: "Only revise this single extracted card, not the whole daily summary.",
+    reviewDecisionHelp: "Confirm keeps this extracted item. Reject removes it as a false positive. Correct keeps it, but with better content.",
+    rejectHelp: "Reject if this extracted item should not exist at all.",
+    correctHelp: "Correct if the item is useful, but its wording or details are wrong.",
     noExtractedItemsTitle: "No extracted items available",
     noExtractedItemsBody: "This run does not include reviewable extracted items yet.",
     reviewPending: "Pending",
@@ -165,8 +170,8 @@ const UI_TEXT = {
     reject: "Reject",
     correct: "Correct",
     saveCorrection: "Save correction",
-    correctionLabel: "Corrected value",
-    correctionPlaceholder: "Add the corrected version or note the value that should be kept.",
+    correctionLabel: "Corrected item",
+    correctionPlaceholder: "Write how this extracted item should appear instead.",
     reviewerNote: "Reviewer note",
     reviewerNotePlaceholder: "Optional note about why you confirmed, rejected, or corrected this item.",
     reviewSaved: "Review update saved.",
@@ -174,8 +179,8 @@ const UI_TEXT = {
     reviewStatus: "Review status",
     sourceEvidence: "Source evidence",
     extractedType: "Type",
-    correctedValue: "Corrected value",
-    noCorrectedValue: "No corrected value saved.",
+    correctedValue: "Corrected item",
+    noCorrectedValue: "No corrected item saved.",
     extractedTypeLabels: {
       action_item: "Action item",
       deadline: "Deadline",
@@ -345,6 +350,11 @@ const UI_TEXT = {
     noEvidenceTabBody: "Wähle im Tab E-Mails eine Nachricht aus, um hier ihre Details zu sehen.",
     reviewPanel: "Review-Warteschlange",
     reviewPanelCopy: "Bestätige, verwerfe oder korrigiere extrahierte Einträge und halte den gespeicherten Lauf mit menschlichem Review synchron.",
+    reviewPanelScope: "Hier prüfst du extrahierte Einträge aus E-Mails, zum Beispiel Action Items, Fristen, Besprechungen oder finanzielle Hinweise.",
+    correctionHelp: "Hier änderst du nur diese einzelne extrahierte Karte, nicht die gesamte Tageszusammenfassung.",
+    reviewDecisionHelp: "Bestätigen behält diesen extrahierten Eintrag. Verwerfen markiert ihn als Fehlfund. Korrigieren behält ihn, aber mit besserem Inhalt.",
+    rejectHelp: "Verwerfen, wenn dieser extrahierte Eintrag gar nicht hätte existieren sollen.",
+    correctHelp: "Korrigieren, wenn der Eintrag sinnvoll ist, aber Text oder Details falsch sind.",
     noExtractedItemsTitle: "Keine extrahierten Einträge verfügbar",
     noExtractedItemsBody: "Dieser Lauf enthält noch keine reviewbaren extrahierten Einträge.",
     reviewPending: "Ausstehend",
@@ -355,8 +365,8 @@ const UI_TEXT = {
     reject: "Verwerfen",
     correct: "Korrigieren",
     saveCorrection: "Korrektur speichern",
-    correctionLabel: "Korrigierter Wert",
-    correctionPlaceholder: "Ergänze die korrigierte Version oder notiere den Wert, der erhalten bleiben soll.",
+    correctionLabel: "Korrigierter Eintrag",
+    correctionPlaceholder: "Schreibe hier, wie dieser extrahierte Eintrag korrekt lauten sollte.",
     reviewerNote: "Review-Notiz",
     reviewerNotePlaceholder: "Optionale Notiz dazu, warum dieser Eintrag bestätigt, verworfen oder korrigiert wurde.",
     reviewSaved: "Review-Update gespeichert.",
@@ -364,8 +374,8 @@ const UI_TEXT = {
     reviewStatus: "Review-Status",
     sourceEvidence: "Quellbeleg",
     extractedType: "Typ",
-    correctedValue: "Korrigierter Wert",
-    noCorrectedValue: "Noch kein korrigierter Wert gespeichert.",
+    correctedValue: "Korrigierter Eintrag",
+    noCorrectedValue: "Noch kein korrigierter Eintrag gespeichert.",
     extractedTypeLabels: {
       action_item: "Nächster Schritt",
       deadline: "Frist",
@@ -982,6 +992,8 @@ function App() {
                         <div className="inspect-card-header">
                           <span className="section-kicker">{ui.reviewPanel}</span>
                           <p className="sheet-summary">{ui.reviewPanelCopy}</p>
+                          <p className="sheet-summary review-scope-copy">{ui.reviewPanelScope}</p>
+                          <p className="sheet-summary review-scope-copy">{ui.reviewDecisionHelp}</p>
                         </div>
                         {reviewActionError ? (
                           <p className="signal-feedback signal-feedback-error">{reviewActionError}</p>
@@ -1450,7 +1462,7 @@ function ReviewItemCard({ item, ui, isSaving, onReview }) {
       <div className="review-action-row">
         <button
           type="button"
-          className="section-toggle"
+          className="review-action-button review-action-button-confirm"
           disabled={isSaving}
           onClick={() =>
             onReview(item.id, {
@@ -1463,7 +1475,7 @@ function ReviewItemCard({ item, ui, isSaving, onReview }) {
         </button>
         <button
           type="button"
-          className="section-toggle"
+          className="review-action-button review-action-button-reject"
           disabled={isSaving}
           onClick={() =>
             onReview(item.id, {
@@ -1476,12 +1488,17 @@ function ReviewItemCard({ item, ui, isSaving, onReview }) {
         </button>
         <button
           type="button"
-          className="section-toggle"
+          className="review-action-button review-action-button-correct"
           disabled={isSaving}
           onClick={() => setIsCorrecting((current) => !current)}
         >
           {ui.correct}
         </button>
+      </div>
+
+      <div className="review-action-help-grid">
+        <p className="review-action-help">{ui.rejectHelp}</p>
+        <p className="review-action-help">{ui.correctHelp}</p>
       </div>
 
       <label className="review-note-field">
@@ -1496,12 +1513,13 @@ function ReviewItemCard({ item, ui, isSaving, onReview }) {
 
       {isCorrecting ? (
         <div className="review-correction-panel">
+          <p className="review-help-text">{ui.correctionHelp}</p>
           <label className="review-note-field">
             <span>{ui.correctionLabel}</span>
             <textarea
               value={correctionText}
               onChange={(event) => setCorrectionText(event.target.value)}
-              placeholder={ui.correctionPlaceholder}
+              placeholder={buildCorrectionPlaceholder(item, ui)}
               rows={3}
             />
           </label>
@@ -1905,6 +1923,11 @@ function formatReviewedValue(reviewedValue) {
   } catch {
     return "";
   }
+}
+
+function buildCorrectionPlaceholder(item, ui) {
+  const parts = [item.title || item.description, ...item.detailLines].filter(Boolean);
+  return parts.join(" | ") || ui.correctionPlaceholder;
 }
 
 function formatMeetingDetail(item, ui) {
