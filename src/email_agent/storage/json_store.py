@@ -9,6 +9,7 @@ from email_agent.models.email import EmailAssessment, NormalizedEmail
 from email_agent.models.run_metadata import RunMetadata
 from email_agent.models.summary import (
     DailySummary,
+    ExtractedItem,
     ExtractedDeadline,
     ExtractedMeeting,
     ExtractedSubscription,
@@ -20,6 +21,7 @@ def persist_run(
     run_date: str,
     emails: list[NormalizedEmail],
     assessments: list[EmailAssessment],
+    extracted_items: list[ExtractedItem],
     deadlines: list[ExtractedDeadline],
     meetings: list[ExtractedMeeting],
     subscriptions: list[ExtractedSubscription],
@@ -35,6 +37,10 @@ def persist_run(
     _write_json(
         run_dir / "assessments.json",
         [assessment.model_dump(mode="json") for assessment in assessments],
+    )
+    _write_json(
+        run_dir / "extracted_items.json",
+        [item.model_dump(mode="json") for item in extracted_items],
     )
     _write_json(
         run_dir / "deadlines.json", [deadline.model_dump(mode="json") for deadline in deadlines]

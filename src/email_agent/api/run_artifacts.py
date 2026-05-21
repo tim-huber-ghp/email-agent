@@ -63,6 +63,7 @@ def read_run(data_dir: Path, run_date: str) -> dict[str, object]:
     assessments = _read_json(run_dir / "assessments.json")
     emails = _read_json(run_dir / "emails.json")
     metadata = _read_optional_json(run_dir / "run_metadata.json")
+    extracted_items = _read_optional_json(run_dir / "extracted_items.json") or []
     deadlines = _read_optional_json(run_dir / "deadlines.json") or []
     meetings = _read_optional_json(run_dir / "meetings.json") or []
     subscriptions = _read_optional_json(run_dir / "subscriptions.json") or []
@@ -72,6 +73,7 @@ def read_run(data_dir: Path, run_date: str) -> dict[str, object]:
         "summary": summary,
         "assessments": assessments,
         "emails": emails,
+        "extractedItems": extracted_items,
         "deadlines": deadlines,
         "meetings": meetings,
         "subscriptions": subscriptions,
@@ -140,4 +142,3 @@ def _read_optional_json(path: Path) -> object | None:
         return _read_json(path)
     except FileNotFoundError:
         return None
-

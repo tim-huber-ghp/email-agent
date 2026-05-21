@@ -1,7 +1,9 @@
 from datetime import datetime
 
 from email_agent.models.email import EmailAssessment, NormalizedEmail
+from email_agent.models.summary import ActionItem
 from email_agent.services.extraction import (
+    build_extracted_items,
     extract_deadlines,
     extract_meetings,
     extract_subscriptions,
@@ -278,3 +280,46 @@ def test_extract_subscriptions_skips_job_alert_salary_range() -> None:
     subscriptions = extract_subscriptions([email], assessments)
 
     assert subscriptions == []
+
+
+def test_build_extracted_items_creates_reviewable_canonical_shape() -> None:
+    email = _email(
+        email_id="msg-canonical",
+        subject="Invoice for May subscription",
+        snippet="Your monthly invoice is ready.",
+        body_preview="Please review the billing statement for your $29.00 monthly plan. Cancel anytime.",
+        labels=["finance"],
+    )
+    assessment = EmailAssessment(
+        email_id="msg-canonical",
+        label="finance",
+        importance_score=80,
+        reason="Contains finance-related keywords.",
+        needs_action=True,
+        confidence_score=86,
+    )
+    action_items = [
+        ActionItem(
+            description="Review the financial message 'Invoice for May subscription'.",
+            source_email_id="msg-canonical",
+            priority="finance",
+        )
+    ]
+    subscriptions = extract_subscriptions([email], [assessment])
+
+    items = build_extracted_items(
+        emails=[email],
+        assessments=[assessment],
+        action_items=action_items,
+        deadlines=[],
+        meetings=[],
+        subscriptions=subscriptions,
+    )
+
+    assert len(items) == 2
+    assert items[0].item_type == "action_item"
+    assert items[0].review_status == "pending"
+    assert items[0].evidence_fields["subject"] == "Invoice for May subscription"
+    assert items[1].item_type == "financial_obligation"
+    assert items[1].confidence_score == 86
+    assert items[1].item_data["amount_hint"] == "$29.00"

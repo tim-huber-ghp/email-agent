@@ -6,6 +6,7 @@ from email_agent.models.email import EmailAssessment, NormalizedEmail, RawEmail
 from email_agent.models.run_metadata import RunMetadata
 from email_agent.models.summary import (
     ActionItem,
+    ExtractedItem,
     DailySummary,
     ExtractedDeadline,
     ExtractedMeeting,
@@ -22,6 +23,7 @@ class AgentState(TypedDict, total=False):
     filtered_emails: list[NormalizedEmail]
     assessments: list[EmailAssessment]
     action_items: list[ActionItem]
+    extracted_items: list[ExtractedItem]
     deadlines: list[ExtractedDeadline]
     meetings: list[ExtractedMeeting]
     subscriptions: list[ExtractedSubscription]

@@ -5,7 +5,13 @@ from __future__ import annotations
 import re
 
 from email_agent.models.email import EmailAssessment, NormalizedEmail
-from email_agent.models.summary import ExtractedDeadline, ExtractedMeeting, ExtractedSubscription
+from email_agent.models.summary import (
+    ActionItem,
+    ExtractedDeadline,
+    ExtractedItem,
+    ExtractedMeeting,
+    ExtractedSubscription,
+)
 
 DAY_HINT_PATTERN = re.compile(
     r"\b(today|tomorrow|monday|tuesday|wednesday|thursday|friday|saturday|sunday|heute|morgen|montag|dienstag|mittwoch|donnerstag|freitag|samstag|sonntag)\b",
@@ -167,6 +173,116 @@ def extract_subscriptions(
         )
 
     return subscriptions
+
+
+def build_extracted_items(
+    *,
+    emails: list[NormalizedEmail],
+    assessments: list[EmailAssessment],
+    action_items: list[ActionItem],
+    deadlines: list[ExtractedDeadline],
+    meetings: list[ExtractedMeeting],
+    subscriptions: list[ExtractedSubscription],
+) -> list[ExtractedItem]:
+    """Build the canonical extracted-item list from current workflow outputs."""
+
+    emails_by_id = {email.id: email for email in emails}
+    assessments_by_id = {assessment.email_id: assessment for assessment in assessments}
+    items: list[ExtractedItem] = []
+
+    for index, action_item in enumerate(action_items):
+        email = emails_by_id.get(action_item.source_email_id)
+        assessment = assessments_by_id.get(action_item.source_email_id)
+        items.append(
+            ExtractedItem(
+                id=f"action_item:{action_item.source_email_id}:{index}",
+                source_email_id=action_item.source_email_id,
+                item_type="action_item",
+                title=action_item.description,
+                description=action_item.description,
+                confidence_score=_assessment_confidence(assessment),
+                confidence_reason=_confidence_reason(
+                    assessment,
+                    fallback="Derived from an email assessment that requires follow-up.",
+                ),
+                evidence_text=_build_evidence_text(email),
+                evidence_fields=_build_evidence_fields(email),
+                item_data={"priority": action_item.priority},
+            )
+        )
+
+    for index, deadline in enumerate(deadlines):
+        email = emails_by_id.get(deadline.source_email_id)
+        assessment = assessments_by_id.get(deadline.source_email_id)
+        items.append(
+            ExtractedItem(
+                id=f"deadline:{deadline.source_email_id}:{index}",
+                source_email_id=deadline.source_email_id,
+                item_type="deadline",
+                title=deadline.description,
+                description=deadline.description,
+                confidence_score=_assessment_confidence(assessment),
+                confidence_reason=_confidence_reason(
+                    assessment,
+                    fallback="Matched time-sensitive deadline hints in the email content.",
+                ),
+                evidence_text=_build_evidence_text(email),
+                evidence_fields=_build_evidence_fields(email),
+                item_data={"due_hint": deadline.due_hint},
+            )
+        )
+
+    for index, meeting in enumerate(meetings):
+        email = emails_by_id.get(meeting.source_email_id)
+        assessment = assessments_by_id.get(meeting.source_email_id)
+        items.append(
+            ExtractedItem(
+                id=f"meeting:{meeting.source_email_id}:{index}",
+                source_email_id=meeting.source_email_id,
+                item_type="meeting",
+                title=meeting.title,
+                description=meeting.title,
+                confidence_score=_assessment_confidence(assessment),
+                confidence_reason=_confidence_reason(
+                    assessment,
+                    fallback="Matched meeting-related language or scheduling context.",
+                ),
+                evidence_text=_build_evidence_text(email),
+                evidence_fields=_build_evidence_fields(email),
+                item_data={
+                    "when_hint": meeting.when_hint,
+                    "location_hint": meeting.location_hint,
+                    "needs_response": meeting.needs_response,
+                },
+            )
+        )
+
+    for index, subscription in enumerate(subscriptions):
+        email = emails_by_id.get(subscription.source_email_id)
+        assessment = assessments_by_id.get(subscription.source_email_id)
+        items.append(
+            ExtractedItem(
+                id=f"financial_obligation:{subscription.source_email_id}:{index}",
+                source_email_id=subscription.source_email_id,
+                item_type="financial_obligation",
+                title=subscription.service_name,
+                description=subscription.service_name,
+                confidence_score=_assessment_confidence(assessment),
+                confidence_reason=_confidence_reason(
+                    assessment,
+                    fallback="Matched recurring billing or renewal language.",
+                ),
+                evidence_text=_build_evidence_text(email),
+                evidence_fields=_build_evidence_fields(email),
+                item_data={
+                    "renewal_hint": subscription.renewal_hint,
+                    "cancellation_hint": subscription.cancellation_hint,
+                    "amount_hint": subscription.amount_hint,
+                },
+            )
+        )
+
+    return items
 
 
 def _extract_due_hint(email: NormalizedEmail) -> str:
@@ -332,3 +448,39 @@ def _email_text(email: NormalizedEmail) -> str:
             " ".join(label.lower() for label in email.labels),
         ]
     )
+
+
+def _assessment_confidence(assessment: EmailAssessment | None) -> int:
+    if assessment is None:
+        return 70
+    return assessment.confidence_score
+
+
+def _confidence_reason(assessment: EmailAssessment | None, *, fallback: str) -> str:
+    if assessment and assessment.reason:
+        return assessment.reason
+    return fallback
+
+
+def _build_evidence_text(email: NormalizedEmail | None) -> str:
+    if email is None:
+        return ""
+
+    for value in (email.snippet, email.body_preview, email.subject):
+        if value:
+            return value
+    return ""
+
+
+def _build_evidence_fields(email: NormalizedEmail | None) -> dict[str, str]:
+    if email is None:
+        return {}
+
+    evidence_fields: dict[str, str] = {}
+    if email.subject:
+        evidence_fields["subject"] = email.subject
+    if email.snippet:
+        evidence_fields["snippet"] = email.snippet
+    if email.body_preview:
+        evidence_fields["body_preview"] = email.body_preview
+    return evidence_fields

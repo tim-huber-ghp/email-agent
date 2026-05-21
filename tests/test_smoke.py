@@ -33,6 +33,7 @@ def test_workflow_returns_state() -> None:
     assert result["classification_mode"] == "heuristic"
     assert result["summary_mode"] == "heuristic"
     assert result["language"] == "en"
+    assert result["extracted_items"]
     assert result["deadlines"]
     assert result["meetings"]
     assert result["subscriptions"]

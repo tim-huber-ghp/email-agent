@@ -16,6 +16,7 @@ from email_agent.providers.gmail import GmailProvider
 from email_agent.providers.mock import MockEmailProvider
 from email_agent.providers.webde import WebDeProvider
 from email_agent.services.extraction import (
+    build_extracted_items,
     extract_deadlines,
     extract_meetings,
     extract_subscriptions,
@@ -226,9 +227,18 @@ def extract_subscriptions_node(state: AgentState) -> AgentState:
         emails=state.get("filtered_emails", []),
         assessments=state.get("assessments", []),
     )
+    extracted_items = build_extracted_items(
+        emails=state.get("filtered_emails", []),
+        assessments=state.get("assessments", []),
+        action_items=state.get("action_items", []),
+        deadlines=state.get("deadlines", []),
+        meetings=state.get("meetings", []),
+        subscriptions=subscriptions,
+    )
     return {
         **state,
         "subscriptions": subscriptions,
+        "extracted_items": extracted_items,
     }
 
 
@@ -361,6 +371,7 @@ def generate_quiet_summary(state: AgentState, settings: Settings) -> AgentState:
         **state,
         "assessments": [],
         "action_items": [],
+        "extracted_items": [],
         "deadlines": [],
         "meetings": [],
         "subscriptions": [],
@@ -412,6 +423,7 @@ def save_run(state: AgentState, settings: Settings) -> AgentState:
         run_date=state["run_date"],
         emails=state.get("emails", []),
         assessments=state.get("assessments", []),
+        extracted_items=state.get("extracted_items", []),
         deadlines=state.get("deadlines", []),
         meetings=state.get("meetings", []),
         subscriptions=state.get("subscriptions", []),

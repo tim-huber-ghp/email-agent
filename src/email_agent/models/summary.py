@@ -1,5 +1,9 @@
 """Summary output models."""
 
+from __future__ import annotations
+
+from typing import Any, Literal
+
 from pydantic import BaseModel, Field
 
 from email_agent.models.email import ImportanceLabel
@@ -39,6 +43,36 @@ class ExtractedSubscription(BaseModel):
     renewal_hint: str = ""
     cancellation_hint: str = ""
     amount_hint: str = ""
+
+
+ExtractedItemType = Literal[
+    "action_item",
+    "deadline",
+    "meeting",
+    "financial_obligation",
+    "follow_up",
+]
+ReviewStatus = Literal["pending", "confirmed", "rejected", "corrected"]
+
+
+class ExtractedItem(BaseModel):
+    """Canonical extracted-item contract for reviewable workflow outputs."""
+
+    id: str
+    source_email_id: str
+    item_type: ExtractedItemType
+    title: str = ""
+    description: str = ""
+    normalized_datetime: str | None = None
+    confidence_score: int = Field(default=100, ge=0, le=100)
+    confidence_reason: str = ""
+    evidence_text: str = ""
+    evidence_fields: dict[str, str] = Field(default_factory=dict)
+    review_status: ReviewStatus = "pending"
+    reviewed_value: dict[str, Any] | None = None
+    reviewed_at: str = ""
+    reviewer_note: str = ""
+    item_data: dict[str, Any] = Field(default_factory=dict)
 
 
 class DailySummary(BaseModel):
