@@ -1,9 +1,66 @@
 import json
 
-from email_agent.api.run_artifacts import read_run
+import pytest
+
+from email_agent.api.run_artifacts import read_run, update_extracted_item_review
+from email_agent.models.review import ExtractedItemReviewUpdate
 
 
 def test_read_run_hydrates_extracted_items_from_legacy_artifacts(tmp_path) -> None:
+    _create_legacy_run(tmp_path)
+
+    run = read_run(tmp_path, "2026-05-10")
+
+    assert len(run["extractedItems"]) == 4
+    assert run["extractedItems"][0]["review_status"] == "pending"
+    assert run["extractedItems"][1]["item_type"] == "deadline"
+    assert run["extractedItems"][2]["item_data"]["location_hint"] == "Zoom"
+    assert run["extractedItems"][3]["item_type"] == "financial_obligation"
+    assert run["runMetadata"]["extracted_item_count"] == 4
+
+
+def test_update_extracted_item_review_persists_for_legacy_runs(tmp_path) -> None:
+    _create_legacy_run(tmp_path)
+
+    updated_item = update_extracted_item_review(
+        tmp_path,
+        "2026-05-10",
+        "deadline:msg-1:0",
+        ExtractedItemReviewUpdate(
+            review_status="corrected",
+            reviewed_value={"due_hint": "Tomorrow"},
+            reviewer_note="Confirmed after checking the full thread.",
+        ),
+    )
+
+    assert updated_item["review_status"] == "corrected"
+    assert updated_item["reviewed_value"] == {"due_hint": "Tomorrow"}
+    assert updated_item["reviewer_note"] == "Confirmed after checking the full thread."
+    assert updated_item["reviewed_at"]
+
+    run = read_run(tmp_path, "2026-05-10")
+    deadline_item = next(item for item in run["extractedItems"] if item["id"] == "deadline:msg-1:0")
+    assert deadline_item["review_status"] == "corrected"
+    assert (tmp_path / "runs" / "2026-05-10" / "extracted_items.json").exists()
+
+
+def test_update_extracted_item_review_rejects_unknown_item(tmp_path) -> None:
+    _create_legacy_run(tmp_path)
+
+    with pytest.raises(FileNotFoundError, match="Extracted item not found"):
+        update_extracted_item_review(
+            tmp_path,
+            "2026-05-10",
+            "missing-item",
+            ExtractedItemReviewUpdate(review_status="confirmed"),
+        )
+
+
+def _write_json(path, payload) -> None:
+    path.write_text(json.dumps(payload), encoding="utf-8")
+
+
+def _create_legacy_run(tmp_path) -> None:
     run_dir = tmp_path / "runs" / "2026-05-10"
     run_dir.mkdir(parents=True)
 
@@ -88,16 +145,3 @@ def test_read_run_hydrates_extracted_items_from_legacy_artifacts(tmp_path) -> No
             }
         ],
     )
-
-    run = read_run(tmp_path, "2026-05-10")
-
-    assert len(run["extractedItems"]) == 4
-    assert run["extractedItems"][0]["review_status"] == "pending"
-    assert run["extractedItems"][1]["item_type"] == "deadline"
-    assert run["extractedItems"][2]["item_data"]["location_hint"] == "Zoom"
-    assert run["extractedItems"][3]["item_type"] == "financial_obligation"
-    assert run["runMetadata"]["extracted_item_count"] == 4
-
-
-def _write_json(path, payload) -> None:
-    path.write_text(json.dumps(payload), encoding="utf-8")

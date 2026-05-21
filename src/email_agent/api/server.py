@@ -8,11 +8,14 @@ from datetime import date
 from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from typing import Any
-from urllib.parse import urlparse
+from urllib.parse import unquote, urlparse
 
-from email_agent.api.run_artifacts import list_runs, read_run
+from pydantic import ValidationError
+
+from email_agent.api.run_artifacts import list_runs, read_run, update_extracted_item_review
 from email_agent.config import Settings
 from email_agent.graph.workflow import run_workflow
+from email_agent.models.review import ExtractedItemReviewUpdate
 
 SUPPORTED_PROVIDERS = {"mock", "gmail", "webde"}
 _RUN_LOCK = threading.Lock()
@@ -114,6 +117,32 @@ class EmailAgentAPIHandler(BaseHTTPRequestHandler):
         except Exception as exc:  # pragma: no cover - defensive API boundary
             self._send_error(HTTPStatus.INTERNAL_SERVER_ERROR, str(exc))
 
+    def do_PATCH(self) -> None:  # noqa: N802
+        parsed = urlparse(self.path)
+
+        try:
+            run_date, item_id = self._parse_review_update_path(parsed.path)
+            payload = self._read_json_body()
+            update = ExtractedItemReviewUpdate.model_validate(payload)
+            updated_item = update_extracted_item_review(
+                self.server.settings.data_dir,
+                run_date,
+                item_id,
+                update,
+            )
+            self._send_json(
+                {
+                    "item": updated_item,
+                    "run": read_run(self.server.settings.data_dir, run_date),
+                }
+            )
+        except FileNotFoundError as exc:
+            self._send_error(HTTPStatus.NOT_FOUND, str(exc))
+        except (ValueError, ValidationError) as exc:
+            self._send_error(HTTPStatus.BAD_REQUEST, str(exc))
+        except Exception as exc:  # pragma: no cover - defensive API boundary
+            self._send_error(HTTPStatus.INTERNAL_SERVER_ERROR, str(exc))
+
     def log_message(self, format: str, *args: Any) -> None:  # noqa: A003
         return
 
@@ -140,6 +169,19 @@ class EmailAgentAPIHandler(BaseHTTPRequestHandler):
     def _validate_run_date(self, run_date: str) -> None:
         date.fromisoformat(run_date)
 
+    def _parse_review_update_path(self, path: str) -> tuple[str, str]:
+        prefix = "/api/runs/"
+        marker = "/extracted-items/"
+        if not path.startswith(prefix) or marker not in path:
+            raise ValueError("Route not found.")
+
+        run_date, item_id = path[len(prefix) :].split(marker, maxsplit=1)
+        self._validate_run_date(run_date)
+        decoded_item_id = unquote(item_id)
+        if not decoded_item_id:
+            raise ValueError("Extracted item id is required.")
+        return run_date, decoded_item_id
+
     def _send_status(self, status: HTTPStatus) -> None:
         self.send_response(status)
         self._send_common_headers()
@@ -159,7 +201,7 @@ class EmailAgentAPIHandler(BaseHTTPRequestHandler):
 
     def _send_common_headers(self) -> None:
         self.send_header("Access-Control-Allow-Origin", "*")
-        self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+        self.send_header("Access-Control-Allow-Methods", "GET, POST, PATCH, OPTIONS")
         self.send_header("Access-Control-Allow-Headers", "Content-Type")
 
 

@@ -3,8 +3,11 @@
 from __future__ import annotations
 
 import json
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
+
+from email_agent.models.review import ExtractedItemReviewUpdate
 
 
 def list_runs(data_dir: Path) -> list[dict[str, object]]:
@@ -96,6 +99,42 @@ def read_run(data_dir: Path, run_date: str) -> dict[str, object]:
             extracted_items=extracted_items,
         ),
     }
+
+
+def update_extracted_item_review(
+    data_dir: Path,
+    run_date: str,
+    item_id: str,
+    update: ExtractedItemReviewUpdate,
+) -> dict[str, object]:
+    """Persist a review update for one extracted item within a saved run."""
+
+    run_dir = data_dir / "runs" / run_date
+    extracted_items_path = run_dir / "extracted_items.json"
+    run_payload = read_run(data_dir, run_date)
+    extracted_items = list(run_payload["extractedItems"])
+
+    updated_item: dict[str, object] | None = None
+    reviewed_at = _utc_now_iso() if update.review_status != "pending" else ""
+
+    for item in extracted_items:
+        if not isinstance(item, dict):
+            continue
+        if str(item.get("id")) != item_id:
+            continue
+
+        item["review_status"] = update.review_status
+        item["reviewed_value"] = update.reviewed_value
+        item["reviewed_at"] = reviewed_at
+        item["reviewer_note"] = update.reviewer_note
+        updated_item = item
+        break
+
+    if updated_item is None:
+        raise FileNotFoundError("Extracted item not found.")
+
+    extracted_items_path.write_text(json.dumps(extracted_items, indent=2), encoding="utf-8")
+    return updated_item
 
 
 def build_fallback_run_metadata(
@@ -327,3 +366,7 @@ def _read_optional_json(path: Path) -> object | None:
         return _read_json(path)
     except FileNotFoundError:
         return None
+
+
+def _utc_now_iso() -> str:
+    return datetime.now(UTC).isoformat().replace("+00:00", "Z")
