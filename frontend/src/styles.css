@@ -1505,16 +1505,19 @@ h3 {
 .review-card-grid {
   display: grid;
   gap: 16px;
-  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  align-items: start;
 }
 
 .review-card {
   display: grid;
   gap: 14px;
+  min-width: 0;
   padding: 18px;
   border-radius: 20px;
   background: rgba(249, 246, 240, 0.9);
   border: 1px solid rgba(47, 42, 38, 0.08);
+  overflow: hidden;
 }
 
 .review-scope-copy {
@@ -1533,17 +1536,23 @@ h3 {
 .review-card-body {
   display: grid;
   gap: 8px;
+  min-width: 0;
 }
 
 .review-card-body h4,
 .review-card-body p {
   margin: 0;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .review-detail-list {
   margin: 0;
   padding-left: 1.1rem;
   color: var(--muted);
+  min-width: 0;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .review-meta-grid {
@@ -1571,6 +1580,8 @@ h3 {
 .review-meta-grid dd {
   margin: 0;
   font-weight: 700;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .review-status-pill {
@@ -1605,8 +1616,8 @@ h3 {
 }
 
 .review-action-row {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 10px;
   padding: 6px;
   border-radius: 18px;
@@ -1624,11 +1635,13 @@ h3 {
   color: var(--muted);
   font-size: 0.84rem;
   line-height: 1.45;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .review-action-button {
-  flex: 1 1 0;
-  min-width: 110px;
+  width: 100%;
+  min-width: 0;
   min-height: 46px;
   border-radius: 14px;
   padding: 10px 14px;
@@ -1679,6 +1692,7 @@ h3 {
 }
 
 .review-action-button-correct {
+  grid-column: 1 / -1;
   border: 1px solid rgba(74, 95, 138, 0.16);
   background: rgba(240, 244, 255, 0.96);
   color: var(--info);
@@ -1693,6 +1707,7 @@ h3 {
 .review-note-field {
   display: grid;
   gap: 8px;
+  min-width: 0;
 }
 
 .review-note-field span {
@@ -1731,6 +1746,16 @@ h3 {
   color: var(--muted);
   font-size: 0.9rem;
   line-height: 1.5;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.review-card .sheet-summary,
+.review-card .email-detail-block,
+.review-card .section-kicker {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .review-save-button {
