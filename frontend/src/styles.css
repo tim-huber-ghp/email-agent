@@ -29,9 +29,9 @@ body {
   margin: 0;
   min-width: 320px;
   background:
-    linear-gradient(180deg, rgba(248, 244, 236, 0.68) 0%, rgba(246, 241, 232, 0.56) 100%),
-    radial-gradient(circle at top left, rgba(250, 246, 238, 0.58), transparent 28%),
-    radial-gradient(circle at bottom right, rgba(246, 241, 232, 0.22), transparent 24%),
+    linear-gradient(180deg, rgba(248, 244, 236, 0.38) 0%, rgba(246, 241, 232, 0.3) 100%),
+    radial-gradient(circle at top left, rgba(250, 246, 238, 0.3), transparent 28%),
+    radial-gradient(circle at bottom right, rgba(246, 241, 232, 0.1), transparent 24%),
     url("https://upload.wikimedia.org/wikipedia/commons/f/fd/Le_bassin_aux_nymph%C3%A9as_-_Claude_Monet.jpg");
   background-position: center, top left, bottom right, center;
   background-size: auto, auto, auto, cover;
@@ -53,6 +53,8 @@ body {
 }
 
 .page-topbar {
+  position: relative;
+  z-index: 30;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -157,18 +159,23 @@ body {
   display: inline-flex;
   align-items: center;
   flex-shrink: 0;
-  gap: 10px;
-  padding: 6px 10px;
+  gap: 14px;
+  min-height: 56px;
+  padding: 7px 8px 7px 18px;
   border-radius: 999px;
-  border: 1px solid var(--line);
-  background: rgba(250, 246, 239, 0.78);
+  border: 1px solid rgba(255, 255, 255, 0.44);
+  background: linear-gradient(180deg, rgba(252, 249, 243, 0.82) 0%, rgba(246, 241, 232, 0.72) 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.72),
+    0 10px 28px rgba(47, 42, 38, 0.08);
+  backdrop-filter: blur(16px);
 }
 
-.locale-switch span {
+.locale-switch > span {
   color: var(--muted);
-  font-size: 0.68rem;
+  font-size: 0.7rem;
   font-weight: 700;
-  letter-spacing: 0.12em;
+  letter-spacing: 0.16em;
   text-transform: uppercase;
   white-space: nowrap;
 }
@@ -178,17 +185,32 @@ body {
 }
 
 .locale-switch-button {
+  position: relative;
   display: inline-flex;
   align-items: center;
-  gap: 10px;
-  border: 0;
-  padding: 0 18px 0 0;
-  background: transparent;
+  min-width: 150px;
+  justify-content: flex-start;
+  min-height: 40px;
+  border: 1px solid rgba(47, 42, 38, 0.08);
+  border-radius: 999px;
+  padding: 0 42px 0 18px;
+  background: rgba(255, 252, 247, 0.72);
   color: var(--ink);
   font: inherit;
-  font-size: 0.84rem;
-  font-weight: 700;
+  font-size: 0.92rem;
+  font-weight: 800;
+  line-height: 1.1;
+  white-space: nowrap;
   cursor: pointer;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.68),
+    0 6px 16px rgba(47, 42, 38, 0.06);
+  transition: border-color 180ms ease, box-shadow 180ms ease, background 180ms ease;
+}
+
+.locale-switch-button .select-button-value {
+  display: block;
+  line-height: 1.1;
 }
 
 .locale-switch-button:focus-visible {
@@ -208,6 +230,10 @@ body {
   background: rgba(251, 248, 242, 0.98);
   box-shadow: 0 18px 34px rgba(47, 42, 38, 0.12);
   backdrop-filter: blur(18px);
+}
+
+.locale-switch .run-picker-caret {
+  right: 15px;
 }
 
 .locale-switch-option {
