@@ -1,8 +1,13 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 const DEFAULT_RUN_PROVIDER = "mock";
 const DEFAULT_TRIGGER_DATE = getTodayDateInputValue();
 const LOCALE_STORAGE_KEY = "email-agent-ui-locale";
+const EMPTY_STATE_ICONS = {
+  deadlines: "⏰",
+  meetings: "📅",
+  subscriptions: "🔄",
+};
 
 const UI_TEXT = {
   en: {
@@ -823,6 +828,9 @@ function App() {
                   <span className="section-kicker">{ui.deadlines}</span>
                   <h2>{ui.timeSensitiveItems}</h2>
                 </div>
+                {!hasDeadlines ? (
+                  <span className="panel-empty-heading-icon" aria-hidden="true">{EMPTY_STATE_ICONS.deadlines}</span>
+                ) : null}
               </div>
 
               {dashboardData.deadlines.length > 0 ? (
@@ -835,7 +843,9 @@ function App() {
                   ))}
                 </ul>
               ) : (
-                <p className="panel-summary">{ui.noDeadlines}</p>
+                <div className="panel-empty-copy">
+                  <p className="panel-summary">{ui.noDeadlines}</p>
+                </div>
               )}
             </section>
 
@@ -845,6 +855,9 @@ function App() {
                   <span className="section-kicker">{ui.meetings}</span>
                   <h2>{ui.calendarSignals}</h2>
                 </div>
+                {!hasMeetings ? (
+                  <span className="panel-empty-heading-icon" aria-hidden="true">{EMPTY_STATE_ICONS.meetings}</span>
+                ) : null}
               </div>
 
               {dashboardData.meetings.length > 0 ? (
@@ -857,7 +870,9 @@ function App() {
                   ))}
                 </ul>
               ) : (
-                <p className="panel-summary">{ui.noMeetings}</p>
+                <div className="panel-empty-copy">
+                  <p className="panel-summary">{ui.noMeetings}</p>
+                </div>
               )}
             </section>
 
@@ -867,6 +882,9 @@ function App() {
                   <span className="section-kicker">{ui.subscriptions}</span>
                   <h2>{ui.recurringCharges}</h2>
                 </div>
+                {!hasSubscriptions ? (
+                  <span className="panel-empty-heading-icon" aria-hidden="true">{EMPTY_STATE_ICONS.subscriptions}</span>
+                ) : null}
               </div>
 
               {dashboardData.subscriptions.length > 0 ? (
@@ -879,7 +897,9 @@ function App() {
                   ))}
                 </ul>
               ) : (
-                <p className="panel-summary">{ui.noSubscriptions}</p>
+                <div className="panel-empty-copy">
+                  <p className="panel-summary">{ui.noSubscriptions}</p>
+                </div>
               )}
             </section>
           </section>
@@ -1321,6 +1341,40 @@ function RunLauncher({
   message,
   compact = false,
 }) {
+  const [isProviderOpen, setIsProviderOpen] = useState(false);
+  const providerMenuRef = useRef(null);
+  const providerOptions = [
+    { value: "mock", label: ui.mockLabel },
+    { value: "gmail", label: ui.gmailLabel },
+    { value: "webde", label: ui.webdeLabel },
+  ];
+  const selectedProvider = providerOptions.find((option) => option.value === runProvider) ?? providerOptions[0];
+
+  useEffect(() => {
+    if (!isProviderOpen) {
+      return undefined;
+    }
+
+    function handlePointerDown(event) {
+      if (!providerMenuRef.current?.contains(event.target)) {
+        setIsProviderOpen(false);
+      }
+    }
+
+    function handleKeyDown(event) {
+      if (event.key === "Escape") {
+        setIsProviderOpen(false);
+      }
+    }
+
+    document.addEventListener("pointerdown", handlePointerDown);
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.removeEventListener("pointerdown", handlePointerDown);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [isProviderOpen]);
+
   return (
     <div className={`run-launcher ${compact ? "run-launcher-compact" : ""}`}>
       {!compact ? (
@@ -1332,18 +1386,53 @@ function RunLauncher({
       ) : null}
 
       <div className="run-launcher-controls">
-        <label className="run-picker">
+        <div className="run-picker">
           <span>{ui.runProvider}</span>
-          <select value={runProvider} onChange={(event) => setRunProvider(event.target.value)}>
-            <option value="mock">{ui.mockLabel}</option>
-            <option value="gmail">{ui.gmailLabel}</option>
-            <option value="webde">{ui.webdeLabel}</option>
-          </select>
-        </label>
+          <div className={`select-shell ${isProviderOpen ? "select-shell-open" : ""}`} ref={providerMenuRef}>
+            <button
+              type="button"
+              className="run-picker-select"
+              aria-haspopup="listbox"
+              aria-expanded={isProviderOpen}
+              onClick={() => setIsProviderOpen((current) => !current)}
+            >
+              <span>{selectedProvider.label}</span>
+              <span className="run-picker-caret" aria-hidden="true" />
+            </button>
+            {isProviderOpen ? (
+              <div className="run-picker-menu" role="listbox" aria-label={ui.runProvider}>
+                {providerOptions.map((option) => (
+                  <button
+                    key={option.value}
+                    type="button"
+                    role="option"
+                    aria-selected={option.value === runProvider}
+                    className={`run-picker-option ${option.value === runProvider ? "run-picker-option-active" : ""}`}
+                    onClick={() => {
+                      setRunProvider(option.value);
+                      setIsProviderOpen(false);
+                    }}
+                  >
+                    {option.label}
+                  </button>
+                ))}
+              </div>
+            ) : null}
+          </div>
+        </div>
 
         <label className="run-picker">
           <span>{ui.runDate}</span>
-          <input type="date" value={triggerDate} onChange={(event) => setTriggerDate(event.target.value)} />
+          <div className="date-input-shell">
+            <input
+              type="date"
+              value={triggerDate}
+              onChange={(event) => setTriggerDate(event.target.value)}
+              onClick={(event) => event.currentTarget.showPicker?.()}
+              onFocus={(event) => event.currentTarget.showPicker?.()}
+            />
+            <span className="date-input-icon" aria-hidden="true">📅</span>
+          </div>
         </label>
 
         <button type="button" className="run-trigger-button" onClick={onRun} disabled={isRunning}>
