@@ -84,9 +84,9 @@ tests/         # regression coverage
 From the repo root:
 
 ```bash
-python -m venv .venv
-.venv/bin/pip install -e '.[dev]'
+make install-dev
 cp .env.example .env
+make frontend-install
 ```
 
 ### 2. Run the mock flow
@@ -122,6 +122,11 @@ npm run dev
 Use these from the repo root:
 
 ```bash
+make install-dev
+make frontend-install
+make lint
+make test
+make check
 make api
 make webde-list-folders
 make run-gmail
@@ -135,6 +140,24 @@ make prepare-real-webde-eval
 make finalize-real-eval
 make frontend
 ```
+
+## Validation
+
+For a quick repo health check from a clean setup:
+
+```bash
+make install-dev
+make frontend-install
+make check
+```
+
+What `make check` currently validates:
+
+- Python linting with Ruff
+- Python test suite with Pytest
+- frontend production build via Vite
+
+This project also runs the same validation flow in GitHub Actions on pushes and pull requests.
 
 Equivalent direct commands are available via:
 
