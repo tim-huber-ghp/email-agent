@@ -6,6 +6,69 @@ I built this project to turn daily email overload into a short, actionable summa
 
 It reads daily emails, classifies what matters, extracts structured signals such as deadlines and subscriptions, and saves inspectable run artifacts that power a small dashboard and local API.
 
+## At A Glance
+
+- Product goal: turn a noisy inbox into a compact daily brief with traceable structured signals
+- Core stack: Python, LangGraph, Pydantic, React, Vite
+- Real integrations: Gmail OAuth and WEB.DE IMAP
+- AI design: heuristics-first workflow with optional Gemini/OpenAI steps and fallback guardrails
+- Reviewer path: `make install-dev`, `make frontend-install`, `make check`
+
+## Why It Matters
+
+This project is meant to demonstrate more than prompt wiring:
+
+- real external integrations instead of mock-only AI flows
+- inspectable run artifacts instead of opaque output-only demos
+- hybrid heuristics + LLM behavior with fallback paths
+- a small product UI backed by a local API
+- evaluation support for synthetic and anonymized real-email datasets
+
+## Reviewer Quick Path
+
+If you are reviewing the repo for engineering quality, the fastest path is:
+
+```bash
+make install-dev
+make frontend-install
+make check
+make run-mock-fast
+```
+
+Then start the local demo:
+
+```bash
+make api
+
+cd frontend
+npm run dev
+```
+
+Open the latest run in the dashboard to inspect:
+
+- summary output
+- important-email classification
+- extracted deadlines, meetings, and subscriptions
+- persisted artifacts and review metadata
+
+## Current Validation Snapshot
+
+- Local validation is standardized through `make check`
+- GitHub Actions runs the same lint, test, and frontend build checks on push and pull request
+- The checked-in sample evaluation reports under `data/eval/reports/` currently show `1.00` label accuracy on a small anonymized real-email slice of 5 examples for both saved heuristic and LLM snapshots
+- That real-email slice is intentionally small, so extraction precision and recall there should be treated as a smoke signal, not a final benchmark
+
+## Project Story
+
+This repo is designed to show a compact but credible AI product workflow:
+
+- fetch daily emails from real providers or a safe mock source
+- normalize them into a shared schema
+- filter and classify what matters
+- extract structured follow-up signals
+- generate a concise daily summary
+- persist artifacts for inspection, debugging, and UI playback
+
 ## Why This Project
 
 This project is designed as a small but credible AI product:
