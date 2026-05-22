@@ -473,8 +473,7 @@ function App() {
     }
   }
 
-  async function handleRunChange(event) {
-    const nextDate = event.target.value;
+  async function handleRunChange(nextDate) {
     setSelectedRunDate(nextDate);
     setSelectedEmailId("");
     setLoading(true);
@@ -556,6 +555,14 @@ function App() {
     [runData, interfaceLocale],
   );
   const ui = dashboardData?.ui ?? UI_TEXT[interfaceLocale];
+  const localeOptions = [
+    { value: "de", label: ui.german },
+    { value: "en", label: ui.english },
+  ];
+  const runSelectOptions = runs.map((run) => ({
+    value: run.date,
+    label: `${run.date} ${run.isMock ? `(${ui.mockLabel})` : `(${run.provider})`}`,
+  }));
   const selectedEmailDetail =
     dashboardData?.allEmails.find((email) => email.id === selectedEmailId)
     ?? dashboardData?.allEmails[0]
@@ -661,10 +668,17 @@ function App() {
           </div>
           <label className="locale-switch">
             <span>{ui.interfaceLanguage}</span>
-            <select value={interfaceLocale} onChange={(event) => setInterfaceLocale(event.target.value)}>
-              <option value="de">{ui.german}</option>
-              <option value="en">{ui.english}</option>
-            </select>
+            <CustomSelect
+              value={interfaceLocale}
+              options={localeOptions}
+              onChange={setInterfaceLocale}
+              ariaLabel={ui.interfaceLanguage}
+              shellClassName="locale-switch-shell"
+              buttonClassName="locale-switch-button"
+              menuClassName="locale-switch-menu"
+              optionClassName="locale-switch-option"
+              activeOptionClassName="locale-switch-option-active"
+            />
           </label>
         </div>
       </div>
@@ -686,13 +700,17 @@ function App() {
                 <div className="brief-run-meta">
                   <label className="run-picker run-picker-brief">
                     <span>{ui.savedRun}</span>
-                    <select value={selectedRunDate} onChange={handleRunChange}>
-                      {runs.map((run) => (
-                        <option key={run.date} value={run.date}>
-                          {run.date} {run.isMock ? `(${ui.mockLabel})` : `(${run.provider})`}
-                        </option>
-                      ))}
-                    </select>
+                    <CustomSelect
+                      value={selectedRunDate}
+                      options={runSelectOptions}
+                      onChange={handleRunChange}
+                      ariaLabel={ui.savedRun}
+                      shellClassName="run-picker-shell-brief"
+                      buttonClassName="run-picker-select run-picker-select-brief"
+                      menuClassName="run-picker-menu"
+                      optionClassName="run-picker-option"
+                      activeOptionClassName="run-picker-option-active"
+                    />
                   </label>
                   <p className="brief-run-count">
                     {ui.emailCountFound(dashboardData.metadata.emailCount)}
@@ -926,13 +944,16 @@ function App() {
               <div className="inspect-hero-run">
                 <label className="run-picker">
                   <span>{ui.savedRun}</span>
-                  <select value={selectedRunDate} onChange={handleRunChange}>
-                    {runs.map((run) => (
-                      <option key={run.date} value={run.date}>
-                        {run.date} {run.isMock ? `(${ui.mockLabel})` : `(${run.provider})`}
-                      </option>
-                    ))}
-                  </select>
+                  <CustomSelect
+                    value={selectedRunDate}
+                    options={runSelectOptions}
+                    onChange={handleRunChange}
+                    ariaLabel={ui.savedRun}
+                    buttonClassName="run-picker-select"
+                    menuClassName="run-picker-menu"
+                    optionClassName="run-picker-option"
+                    activeOptionClassName="run-picker-option-active"
+                  />
                 </label>
               </div>
             </div>
@@ -1329,6 +1350,86 @@ function EmptyTabPlaceholder({ title, body }) {
   );
 }
 
+function CustomSelect({
+  value,
+  options,
+  onChange,
+  ariaLabel,
+  shellClassName = "",
+  buttonClassName = "",
+  menuClassName = "",
+  optionClassName = "",
+  activeOptionClassName = "",
+}) {
+  const [isOpen, setIsOpen] = useState(false);
+  const selectRef = useRef(null);
+  const buttonRef = useRef(null);
+  const selectedOption = options.find((option) => option.value === value) ?? options[0];
+
+  useEffect(() => {
+    if (!isOpen) {
+      return undefined;
+    }
+
+    function handlePointerDown(event) {
+      if (!selectRef.current?.contains(event.target)) {
+        setIsOpen(false);
+        buttonRef.current?.blur();
+      }
+    }
+
+    function handleKeyDown(event) {
+      if (event.key === "Escape") {
+        setIsOpen(false);
+        buttonRef.current?.blur();
+      }
+    }
+
+    document.addEventListener("pointerdown", handlePointerDown);
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.removeEventListener("pointerdown", handlePointerDown);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [isOpen]);
+
+  return (
+    <div className={`select-shell ${shellClassName} ${isOpen ? "select-shell-open" : ""}`.trim()} ref={selectRef}>
+      <button
+        ref={buttonRef}
+        type="button"
+        className={buttonClassName}
+        aria-haspopup="listbox"
+        aria-expanded={isOpen}
+        onClick={() => setIsOpen((current) => !current)}
+      >
+        <span className="select-button-value">{selectedOption?.label ?? ""}</span>
+        <span className="run-picker-caret" aria-hidden="true" />
+      </button>
+      {isOpen ? (
+        <div className={menuClassName} role="listbox" aria-label={ariaLabel}>
+          {options.map((option) => (
+            <button
+              key={option.value}
+              type="button"
+              role="option"
+              aria-selected={option.value === value}
+              className={`${optionClassName} ${option.value === value ? activeOptionClassName : ""}`.trim()}
+              onClick={() => {
+                onChange(option.value);
+                setIsOpen(false);
+                buttonRef.current?.blur();
+              }}
+            >
+              {option.label}
+            </button>
+          ))}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
 function RunLauncher({
   ui,
   runProvider,
@@ -1341,39 +1442,11 @@ function RunLauncher({
   message,
   compact = false,
 }) {
-  const [isProviderOpen, setIsProviderOpen] = useState(false);
-  const providerMenuRef = useRef(null);
   const providerOptions = [
     { value: "mock", label: ui.mockLabel },
     { value: "gmail", label: ui.gmailLabel },
     { value: "webde", label: ui.webdeLabel },
   ];
-  const selectedProvider = providerOptions.find((option) => option.value === runProvider) ?? providerOptions[0];
-
-  useEffect(() => {
-    if (!isProviderOpen) {
-      return undefined;
-    }
-
-    function handlePointerDown(event) {
-      if (!providerMenuRef.current?.contains(event.target)) {
-        setIsProviderOpen(false);
-      }
-    }
-
-    function handleKeyDown(event) {
-      if (event.key === "Escape") {
-        setIsProviderOpen(false);
-      }
-    }
-
-    document.addEventListener("pointerdown", handlePointerDown);
-    document.addEventListener("keydown", handleKeyDown);
-    return () => {
-      document.removeEventListener("pointerdown", handlePointerDown);
-      document.removeEventListener("keydown", handleKeyDown);
-    };
-  }, [isProviderOpen]);
 
   return (
     <div className={`run-launcher ${compact ? "run-launcher-compact" : ""}`}>
@@ -1388,37 +1461,16 @@ function RunLauncher({
       <div className="run-launcher-controls">
         <div className="run-picker">
           <span>{ui.runProvider}</span>
-          <div className={`select-shell ${isProviderOpen ? "select-shell-open" : ""}`} ref={providerMenuRef}>
-            <button
-              type="button"
-              className="run-picker-select"
-              aria-haspopup="listbox"
-              aria-expanded={isProviderOpen}
-              onClick={() => setIsProviderOpen((current) => !current)}
-            >
-              <span>{selectedProvider.label}</span>
-              <span className="run-picker-caret" aria-hidden="true" />
-            </button>
-            {isProviderOpen ? (
-              <div className="run-picker-menu" role="listbox" aria-label={ui.runProvider}>
-                {providerOptions.map((option) => (
-                  <button
-                    key={option.value}
-                    type="button"
-                    role="option"
-                    aria-selected={option.value === runProvider}
-                    className={`run-picker-option ${option.value === runProvider ? "run-picker-option-active" : ""}`}
-                    onClick={() => {
-                      setRunProvider(option.value);
-                      setIsProviderOpen(false);
-                    }}
-                  >
-                    {option.label}
-                  </button>
-                ))}
-              </div>
-            ) : null}
-          </div>
+          <CustomSelect
+            value={runProvider}
+            options={providerOptions}
+            onChange={setRunProvider}
+            ariaLabel={ui.runProvider}
+            buttonClassName="run-picker-select"
+            menuClassName="run-picker-menu"
+            optionClassName="run-picker-option"
+            activeOptionClassName="run-picker-option-active"
+          />
         </div>
 
         <label className="run-picker">
