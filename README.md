@@ -73,13 +73,6 @@ Lets a user confirm, reject, or correct extracted action items before trusting t
 
 <img src="screenshots/screenshot-2026-05-22_13-56-49.png" alt="Email Agent review workflow" width="1100" />
 
-## Current Validation Snapshot
-
-- Local validation is standardized through `make check`
-- GitHub Actions runs the same lint, test, and frontend build checks on push and pull request
-- The checked-in sample evaluation reports under `data/eval/reports/` currently show `1.00` label accuracy on a small anonymized real-email slice of 5 examples for both saved heuristic and LLM snapshots
-- That real-email slice is intentionally small, so extraction precision and recall there should be treated as a smoke signal, not a final benchmark
-
 ## Project Story
 
 This repo is designed to show a compact but credible AI product workflow:
@@ -122,6 +115,13 @@ This project is designed as a small but credible AI product:
   - harder synthetic dataset
   - adversarial dataset
   - anonymized real-email dataset support
+
+## Current Validation Snapshot
+
+- Local validation is standardized through `make check`
+- GitHub Actions runs the same lint, test, and frontend build checks on push and pull request
+- The checked-in sample evaluation reports under `data/eval/reports/` currently show `1.00` label accuracy on a small anonymized real-email slice of 5 examples for both saved heuristic and LLM snapshots
+- That real-email slice is intentionally small, so extraction precision and recall there should be treated as a smoke signal, not a final benchmark
 
 ## Architecture
 
