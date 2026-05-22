@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import logging
 import threading
 from datetime import date
 from http import HTTPStatus
@@ -18,7 +19,9 @@ from email_agent.graph.workflow import run_workflow
 from email_agent.models.review import ExtractedItemReviewUpdate
 
 SUPPORTED_PROVIDERS = {"mock", "gmail", "webde"}
+INTERNAL_ERROR_MESSAGE = "The server could not complete that request."
 _RUN_LOCK = threading.Lock()
+logger = logging.getLogger(__name__)
 
 
 class EmailAgentAPIServer(ThreadingHTTPServer):
@@ -71,7 +74,7 @@ class EmailAgentAPIHandler(BaseHTTPRequestHandler):
         except ValueError as exc:
             self._send_error(HTTPStatus.BAD_REQUEST, str(exc))
         except Exception as exc:  # pragma: no cover - defensive API boundary
-            self._send_error(HTTPStatus.INTERNAL_SERVER_ERROR, str(exc))
+            self._handle_internal_error("GET", parsed.path, exc)
 
     def do_POST(self) -> None:  # noqa: N802
         parsed = urlparse(self.path)
@@ -115,7 +118,7 @@ class EmailAgentAPIHandler(BaseHTTPRequestHandler):
         except ValueError as exc:
             self._send_error(HTTPStatus.BAD_REQUEST, str(exc))
         except Exception as exc:  # pragma: no cover - defensive API boundary
-            self._send_error(HTTPStatus.INTERNAL_SERVER_ERROR, str(exc))
+            self._handle_internal_error("POST", parsed.path, exc)
 
     def do_PATCH(self) -> None:  # noqa: N802
         parsed = urlparse(self.path)
@@ -141,7 +144,7 @@ class EmailAgentAPIHandler(BaseHTTPRequestHandler):
         except (ValueError, ValidationError) as exc:
             self._send_error(HTTPStatus.BAD_REQUEST, str(exc))
         except Exception as exc:  # pragma: no cover - defensive API boundary
-            self._send_error(HTTPStatus.INTERNAL_SERVER_ERROR, str(exc))
+            self._handle_internal_error("PATCH", parsed.path, exc)
 
     def log_message(self, format: str, *args: Any) -> None:  # noqa: A003
         return
@@ -203,6 +206,10 @@ class EmailAgentAPIHandler(BaseHTTPRequestHandler):
         self.send_header("Access-Control-Allow-Origin", "*")
         self.send_header("Access-Control-Allow-Methods", "GET, POST, PATCH, OPTIONS")
         self.send_header("Access-Control-Allow-Headers", "Content-Type")
+
+    def _handle_internal_error(self, method: str, path: str, exc: Exception) -> None:
+        logger.exception("Unhandled API error during %s %s", method, path, exc_info=exc)
+        self._send_error(HTTPStatus.INTERNAL_SERVER_ERROR, INTERNAL_ERROR_MESSAGE)
 
 
 def serve_api(*, settings: Settings, host: str = "127.0.0.1", port: int = 8000) -> None:
