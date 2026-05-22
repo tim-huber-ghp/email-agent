@@ -10,12 +10,12 @@ import pytest
 from pydantic import ValidationError
 
 import email_agent.api.server as api_server
-from email_agent.config import Settings
 from email_agent.api.server import (
     INTERNAL_ERROR_MESSAGE,
     EmailAgentAPIHandler,
     EmailAgentAPIServer,
 )
+from email_agent.config import Settings
 from email_agent.models.review import ExtractedItemReviewUpdate
 
 
