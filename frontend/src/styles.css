@@ -1189,6 +1189,8 @@ h3 {
 }
 
 .panel.inspect-hero {
+  position: relative;
+  z-index: 3;
   display: grid;
   gap: 36px;
   padding:
@@ -1196,6 +1198,7 @@ h3 {
     22px
     clamp(30px, 4.5vw, 52px);
   background: rgba(247, 244, 238, 0.9);
+  overflow: visible;
 }
 
 .inspect-hero-top {
