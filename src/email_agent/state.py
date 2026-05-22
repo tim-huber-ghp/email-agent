@@ -6,9 +6,9 @@ from email_agent.models.email import EmailAssessment, NormalizedEmail, RawEmail
 from email_agent.models.run_metadata import RunMetadata
 from email_agent.models.summary import (
     ActionItem,
-    ExtractedItem,
     DailySummary,
     ExtractedDeadline,
+    ExtractedItem,
     ExtractedMeeting,
     ExtractedSubscription,
 )

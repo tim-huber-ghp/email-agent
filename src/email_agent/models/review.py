@@ -17,7 +17,7 @@ class ExtractedItemReviewUpdate(BaseModel):
     reviewer_note: str = ""
 
     @model_validator(mode="after")
-    def validate_corrected_value(self) -> "ExtractedItemReviewUpdate":
+    def validate_corrected_value(self) -> ExtractedItemReviewUpdate:
         if self.review_status == "corrected" and not self.reviewed_value:
             raise ValueError("Corrected review updates require a reviewed_value payload.")
         return self
