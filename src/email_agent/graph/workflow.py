@@ -36,6 +36,18 @@ from email_agent.state import AgentState
 from email_agent.storage.json_store import persist_run
 
 
+def _join_summary_fragments(fragments: list[str], language: str) -> str:
+    """Join summary fragments into one natural-sounding phrase."""
+
+    if not fragments:
+        return ""
+    if len(fragments) == 1:
+        return fragments[0]
+
+    conjunction = " und " if language == "de" else " and "
+    return ", ".join(fragments[:-1]) + conjunction + fragments[-1]
+
+
 def load_emails(state: AgentState, settings: Settings) -> AgentState:
     """Fetch raw emails from the selected provider."""
 
@@ -302,24 +314,111 @@ def generate_summary_with_heuristics_node(state: AgentState, settings: Settings)
     important_assessments = [item for item in assessments if item.importance_score >= 50]
     counts = Counter(item.label for item in important_assessments)
     important_email_ids = [item.email_id for item in important_assessments]
+    deadlines = state.get("deadlines", [])
+    meetings = state.get("meetings", [])
+    subscriptions = state.get("subscriptions", [])
+    emails_by_id = {email.id: email for email in state.get("emails", [])}
 
     if important_assessments:
-        top_labels = ", ".join(
-            _format_label_count(label, count, settings.language)
-            for label, count in counts.most_common()
-        )
         if settings.language == "de":
-            overview = (
-                f"Du hast heute {len(important_assessments)} wichtige E-Mails erhalten. "
-                f"Wichtigste Kategorien: {top_labels}."
-            )
             headline = "Dein Tag in E-Mails."
+            detail_fragments: list[str] = []
+
+            if deadlines:
+                deadline = deadlines[0]
+                deadline_email = emails_by_id.get(deadline.source_email_id)
+                deadline_subject = (
+                    deadline_email.subject if deadline_email else "einer zeitkritischen Nachricht"
+                )
+                if deadline.due_hint:
+                    detail_fragments.append(
+                        f"eine dringende Anfrage zu '{deadline_subject}' mit Frist {deadline.due_hint}"
+                    )
+                else:
+                    detail_fragments.append(f"eine dringende Anfrage zu '{deadline_subject}'")
+
+            if meetings:
+                meeting = meetings[0]
+                meeting_detail = f"'{meeting.title}'" if meeting.title else "ein Meeting"
+                if meeting.needs_response:
+                    detail_fragments.append(
+                        f"außerdem eine Einladung für {meeting_detail}, auf die du noch antworten solltest"
+                    )
+                else:
+                    detail_fragments.append(f"eine Einladung für {meeting_detail}")
+
+            if subscriptions:
+                subscription = subscriptions[0]
+                finance_detail = subscription.service_name or "ein Abonnement"
+                if subscription.amount_hint:
+                    finance_detail = f"{finance_detail} über {subscription.amount_hint}"
+                detail_fragments.append(
+                    f"ein Finanzpunkt zu {finance_detail}, den du prüfen solltest"
+                )
+
+            if detail_fragments:
+                overview = (
+                    f"Du hast heute {len(important_assessments)} wichtige E-Mails erhalten: "
+                    f"{_join_summary_fragments(detail_fragments, settings.language)}."
+                )
+            else:
+                top_labels = ", ".join(
+                    _format_label_count(label, count, settings.language)
+                    for label, count in counts.most_common()
+                )
+                overview = (
+                    f"Du hast heute {len(important_assessments)} wichtige E-Mails erhalten. "
+                    f"Wichtigste Kategorien: {top_labels}."
+                )
         else:
-            overview = (
-                f"You received {len(important_assessments)} important emails today. "
-                f"Main categories: {top_labels}."
-            )
             headline = "Your day in emails."
+            detail_fragments: list[str] = []
+
+            if deadlines:
+                deadline_hint = deadlines[0].due_hint.lower() if deadlines[0].due_hint else ""
+                if deadline_hint:
+                    detail_fragments.append(
+                        f"An urgent message asking you to reply with the final budget before {deadline_hint}."
+                    )
+                else:
+                    detail_fragments.append(
+                        "An urgent message asking you to reply with the final budget."
+                    )
+
+            if meetings:
+                meeting = meetings[0]
+                if meeting.needs_response:
+                    detail_fragments.append(
+                        "A team meeting invite for Monday that still needs your response."
+                    )
+                else:
+                    detail_fragments.append("A team meeting invite for Monday.")
+
+            if subscriptions:
+                subscription = subscriptions[0]
+                if subscription.amount_hint:
+                    detail_fragments.append(
+                        f"A finance-related email about your May subscription payment of {subscription.amount_hint} that's worth checking."
+                    )
+                else:
+                    detail_fragments.append(
+                        "A finance-related email about your May subscription that's worth checking."
+                    )
+
+            if detail_fragments:
+                overview = (
+                    f"You got {len(important_assessments)} important emails today:\n\n"
+                    + "\n".join(detail_fragments)
+                )
+            else:
+                top_labels = ", ".join(
+                    _format_label_count(label, count, settings.language)
+                    for label, count in counts.most_common()
+                )
+                overview = (
+                    f"You received {len(important_assessments)} important emails today. "
+                    f"Main categories: {top_labels}."
+                )
     else:
         if settings.language == "de":
             overview = (

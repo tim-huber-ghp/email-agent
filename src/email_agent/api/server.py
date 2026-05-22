@@ -90,6 +90,7 @@ class EmailAgentAPIHandler(BaseHTTPRequestHandler):
 
             requested_date = payload.get("run_date")
             run_date = self._normalize_run_date(requested_date)
+            language = self._normalize_language(payload.get("language"))
 
             if not _RUN_LOCK.acquire(blocking=False):
                 self._send_error(
@@ -99,9 +100,10 @@ class EmailAgentAPIHandler(BaseHTTPRequestHandler):
                 return
 
             try:
+                run_settings = self.server.settings.model_copy(update={"language": language})
                 state = run_workflow(
                     {"provider": provider, "run_date": run_date},
-                    self.server.settings,
+                    run_settings,
                 )
             finally:
                 _RUN_LOCK.release()
@@ -171,6 +173,15 @@ class EmailAgentAPIHandler(BaseHTTPRequestHandler):
 
     def _validate_run_date(self, run_date: str) -> None:
         date.fromisoformat(run_date)
+
+    def _normalize_language(self, requested_language: Any) -> str:
+        if requested_language in (None, ""):
+            return self.server.settings.language
+
+        language = str(requested_language).strip().lower()
+        if language not in {"de", "en"}:
+            raise ValueError("Language must be one of: de, en.")
+        return language
 
     def _parse_review_update_path(self, path: str) -> tuple[str, str]:
         prefix = "/api/runs/"

@@ -51,6 +51,28 @@ Open the latest run in the dashboard to inspect:
 - extracted deadlines, meetings, and subscriptions
 - persisted artifacts and review metadata
 
+## Demo Preview
+
+The UI is split between a daily brief, a technical inspection workspace, and a review surface for extracted items:
+
+### 1. Daily Brief
+
+Shows the generated summary, the main counts, and a run launcher for creating fresh summaries.
+
+<img src="screenshots/screenshot-2026-05-22_13-55-20.png" alt="Email Agent overview dashboard" width="1100" />
+
+### 2. Inspection Workspace
+
+Makes the saved run trace visible, including execution mode, token usage, provider, timing, and artifact-backed metadata.
+
+<img src="screenshots/screenshot-2026-05-22_13-56-11.png" alt="Email Agent inspection workspace" width="1100" />
+
+### 3. Review Workflow
+
+Lets a user confirm, reject, or correct extracted action items before trusting them downstream.
+
+<img src="screenshots/screenshot-2026-05-22_13-56-49.png" alt="Email Agent review workflow" width="1100" />
+
 ## Current Validation Snapshot
 
 - Local validation is standardized through `make check`

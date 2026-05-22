@@ -74,6 +74,44 @@ def test_post_runs_rejects_invalid_provider(tmp_path: Path) -> None:
     assert payload["error"] == "Provider must be one of: gmail, mock, webde."
 
 
+def test_post_runs_rejects_invalid_language(tmp_path: Path) -> None:
+    with ApiClient(tmp_path) as client:
+        status, payload = client.request(
+            "POST",
+            "/api/runs",
+            {"provider": "mock", "language": "fr"},
+            expected_status=400,
+        )
+
+    assert status == 400
+    assert payload["error"] == "Language must be one of: de, en."
+
+
+def test_post_runs_uses_requested_language(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    _create_saved_run(tmp_path, "2026-05-10")
+    captured: dict[str, str] = {}
+
+    def _fake_run_workflow(initial_state, settings):
+        captured["language"] = settings.language
+        return {
+            "persisted_run_dir": str(tmp_path / "runs" / initial_state["run_date"]),
+        }
+
+    monkeypatch.setattr(api_server, "run_workflow", _fake_run_workflow)
+
+    with ApiClient(tmp_path) as client:
+        status, payload = client.request(
+            "POST",
+            "/api/runs",
+            {"provider": "mock", "run_date": "2026-05-10", "language": "en"},
+            expected_status=201,
+        )
+
+    assert status == 201
+    assert captured["language"] == "en"
+    assert payload["run"]["summary"]["language"] == "en"
+
+
 def test_post_runs_hides_internal_errors(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(api_server, "run_workflow", _raise_runtime_error)
 

@@ -122,6 +122,7 @@ function App() {
         body: JSON.stringify({
           provider: runProvider,
           run_date: triggerDate,
+          language: interfaceLocale,
         }),
       });
 
